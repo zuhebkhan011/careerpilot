@@ -34,7 +34,7 @@ const mapBackendJobToUI = (bJob: any): Job => {
     location: bJob.location,
     salary: bJob.salary,
     workMode: bJob.work_mode || bJob.workMode || 'Hybrid',
-    matchScore: 85,
+    matchScore: bJob.match_score || bJob.matchScore || 85,
     description: bJob.description || '',
     requirements: bJob.responsibilities || bJob.requirements || [],
     skillsRequired: bJob.skills || bJob.skillsRequired || [],
@@ -42,6 +42,8 @@ const mapBackendJobToUI = (bJob: any): Job => {
     experienceLevel: bJob.experience_required || '0-2 Years',
     department: 'Engineering',
     benefits: ['Health Insurance', 'Flexible Working', 'Performance Bonus'],
+    source: bJob.source || 'demo',
+    sourceUrl: bJob.source_url || bJob.sourceUrl || (bJob.source === 'linkedin' ? `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(bJob.company + ' ' + bJob.role)}` : undefined),
   };
 };
 
@@ -155,6 +157,58 @@ export const apiService = {
   },
 
   // 6. Resume Upload & Analysis APIs
+  // Helper to map backend profile & analysis to ResumeProfile
+  _mapProfileResponse: (body: any, fallbackProfileId: string = 'demo-profile-1', text?: string): ResumeProfile => {
+    const p = body.data?.profile || body.data;
+    const analysis = body.data?.analysis || body.data?.resume?.analysis_result;
+    return {
+      id: p?.id || fallbackProfileId,
+      fullName: p?.name || 'Rahul Sharma',
+      email: p?.email || 'rahul.sharma@example.com',
+      phone: p?.phone || '+91 9876543210',
+      location: p?.location || 'Bengaluru, India',
+      targetRole: p?.degree || 'Software Engineer',
+      yearsOfExperience: 1,
+      summary: p?.summary || `${p?.degree || 'Engineering Graduate'} from ${p?.college || 'University'} with core skills in ${p?.skills?.slice(0, 4).join(', ')}.`,
+      skills: p?.skills || [],
+      experiences: (p?.experience || []).map((e: any, idx: number) => ({
+        id: `exp-${idx}`,
+        title: e.title || 'Developer Intern',
+        company: e.company || 'Tech Company',
+        period: e.duration || '2024',
+        description: e.description || '',
+      })),
+      education: [
+        {
+          id: 'edu-1',
+          degree: p?.education || p?.degree || 'B.Tech CS',
+          institution: p?.college || 'University',
+          year: p?.graduation_year || '2024',
+        },
+      ],
+      updatedAt: p?.updated_at || new Date().toISOString(),
+      rawText: text || body.data?.resume?.raw_text || '',
+      college: p?.college,
+      degree: p?.degree,
+      graduation_year: p?.graduation_year,
+      projects: p?.projects || [],
+      certifications: p?.certifications || [],
+      achievements: p?.achievements || [],
+      languages: p?.languages || [],
+      analysisData: analysis
+        ? {
+            resumeScore: analysis.resumeScore ?? 84,
+            scoreExplanation: analysis.scoreExplanation || 'Your resume demonstrates solid foundational skills, but project descriptions could include more metric impact.',
+            strengths: analysis.strengths || ['✓ Strong Node.js experience', '✓ Relevant B.Tech CS degree'],
+            weaknesses: analysis.weaknesses || ['△ Project descriptions lack measurable impact'],
+            missingSkills: analysis.missingSkills || [{ skill: 'Docker', reason: 'Essential for containerized cloud deployment.' }],
+            improvements: analysis.improvements || [],
+            recommendedRoles: analysis.recommendedRoles || ['Software Development Engineer I (Backend)', 'Full Stack Developer'],
+          }
+        : undefined,
+    };
+  },
+
   uploadResumeFile: async (file: File, profileId: string = 'demo-profile-1'): Promise<ResumeProfile> => {
     const formData = new FormData();
     formData.append('resume', file);
@@ -166,35 +220,7 @@ export const apiService = {
     });
     const body = await res.json();
     if (!res.ok || !body.success) throw new Error(body.error?.message || 'Resume upload failed');
-    const p = body.data?.profile || body.data;
-    return {
-      id: p.id || profileId,
-      fullName: p.name || 'Rahul Sharma',
-      email: p.email || 'rahul.sharma@example.com',
-      phone: p.phone || '+91 9876543210',
-      location: p.location || 'Bengaluru, India',
-      targetRole: p.degree || 'Full Stack Developer',
-      yearsOfExperience: 1,
-      summary: `${p.degree || 'Engineering Graduate'} from ${p.college || 'University'} with core skills in ${p.skills?.slice(0, 4).join(', ')}.`,
-      skills: p.skills || [],
-      experiences: (p.experience || []).map((e: any, idx: number) => ({
-        id: `exp-${idx}`,
-        title: e.title || 'Developer Intern',
-        company: e.company || 'Tech Company',
-        period: e.duration || '2024',
-        description: e.description || '',
-      })),
-      education: [
-        {
-          id: 'edu-1',
-          degree: p.education || p.degree || 'B.Tech CS',
-          institution: p.college || 'University',
-          year: p.graduation_year || '2024',
-        },
-      ],
-      updatedAt: p.updated_at || new Date().toISOString(),
-      rawText: body.data?.resume?.raw_text || '',
-    };
+    return apiService._mapProfileResponse(body, profileId);
   },
 
   // Alias for ResumeView component
@@ -206,35 +232,7 @@ export const apiService = {
     });
     const body = await res.json();
     if (!res.ok || !body.success) throw new Error(body.error?.message || 'Resume upload failed');
-    const p = body.data?.profile || body.data;
-    return {
-      id: p.id || profileId,
-      fullName: p.name || 'Rahul Sharma',
-      email: p.email || 'rahul.sharma@example.com',
-      phone: p.phone || '+91 9876543210',
-      location: p.location || 'Bengaluru, India',
-      targetRole: p.degree || 'Full Stack Developer',
-      yearsOfExperience: 1,
-      summary: `${p.degree || 'Engineering Graduate'} from ${p.college || 'University'} with core skills in ${p.skills?.slice(0, 4).join(', ')}.`,
-      skills: p.skills || [],
-      experiences: (p.experience || []).map((e: any, idx: number) => ({
-        id: `exp-${idx}`,
-        title: e.title || 'Developer Intern',
-        company: e.company || 'Tech Company',
-        period: e.duration || '2024',
-        description: e.description || '',
-      })),
-      education: [
-        {
-          id: 'edu-1',
-          degree: p.education || p.degree || 'B.Tech CS',
-          institution: p.college || 'University',
-          year: p.graduation_year || '2024',
-        },
-      ],
-      updatedAt: p.updated_at || new Date().toISOString(),
-      rawText: body.data?.resume?.raw_text || '',
-    };
+    return apiService._mapProfileResponse(body, profileId);
   },
 
   analyzeResumeText: async (text: string, profileId: string = 'demo-profile-1'): Promise<ResumeProfile> => {
@@ -245,35 +243,7 @@ export const apiService = {
     });
     const body = await res.json();
     if (!res.ok || !body.success) throw new Error(body.error?.message || 'Resume text analysis failed');
-    const p = body.data?.profile || body.data;
-    return {
-      id: p.id || profileId,
-      fullName: p.name || 'Rahul Sharma',
-      email: p.email || 'rahul.sharma@example.com',
-      phone: p.phone || '+91 9876543210',
-      location: p.location || 'Bengaluru, India',
-      targetRole: p.degree || 'Full Stack Developer',
-      yearsOfExperience: 1,
-      summary: `${p.degree || 'Engineering Graduate'} from ${p.college || 'University'} with core skills in ${p.skills?.slice(0, 4).join(', ')}.`,
-      skills: p.skills || [],
-      experiences: (p.experience || []).map((e: any, idx: number) => ({
-        id: `exp-${idx}`,
-        title: e.title || 'Developer Intern',
-        company: e.company || 'Tech Company',
-        period: e.duration || '2024',
-        description: e.description || '',
-      })),
-      education: [
-        {
-          id: 'edu-1',
-          degree: p.education || p.degree || 'B.Tech CS',
-          institution: p.college || 'University',
-          year: p.graduation_year || '2024',
-        },
-      ],
-      updatedAt: p.updated_at || new Date().toISOString(),
-      rawText: text,
-    };
+    return apiService._mapProfileResponse(body, profileId, text);
   },
 
   // Alias for ResumeView

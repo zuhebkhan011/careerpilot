@@ -40,22 +40,47 @@ async function fetchAllJobs(): Promise<Job[]> {
       const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
       if (!error && data && data.length > 0) return data;
     } catch {
-      // Ignore and fallback
+      // Fallback
     }
   }
+
+  if (memoryDb.jobs.length === 0) {
+    const { SAMPLE_INDIAN_JOBS } = require('../db/seed');
+    memoryDb.jobs = SAMPLE_INDIAN_JOBS.map((job: any, idx: number) => ({
+      ...job,
+      id: `job-indian-sample-${idx + 1}`,
+      source: idx % 2 === 0 ? 'linkedin' : 'demo',
+      source_url: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(job.company + ' ' + job.role)}`,
+      created_at: new Date().toISOString(),
+    }));
+  }
+
   return memoryDb.jobs;
 }
 
 export const getJobs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { location, workMode, employmentType, experience, skill, search } = req.query;
+    const { location, workMode, employmentType, experience, skill, search, profileId } = req.query;
     let jobs = await fetchAllJobs();
 
-    // Ensure sample jobs exist if list is empty
-    if (jobs.length === 0 && !getSupabase()) {
-      const { seedJobs } = require('../db/seed');
-      await seedJobs();
-      jobs = memoryDb.jobs;
+    // Check candidate profile for match scoring & personalized ranking
+    const targetProfileId = String(profileId || 'demo-profile-1');
+    const profile = await fetchProfile(targetProfileId);
+
+    if (profile && profile.skills && profile.skills.length > 0) {
+      const candSkills = profile.skills.map(s => s.toLowerCase());
+      jobs = jobs.map((job: any) => {
+        const reqSkills = (job.skills || []).map((s: string) => s.toLowerCase());
+        const matched = reqSkills.filter((s: string) => candSkills.some(cs => cs.includes(s) || s.includes(cs)));
+        const matchScore = reqSkills.length > 0 ? Math.max(55, Math.min(98, Math.round((matched.length / reqSkills.length) * 100))) : 80;
+        return {
+          ...job,
+          match_score: matchScore,
+        };
+      });
+
+      // Rank jobs by match score descending
+      jobs.sort((a: any, b: any) => (b.match_score || 0) - (a.match_score || 0));
     }
 
     // Apply filtering

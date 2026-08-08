@@ -20,6 +20,8 @@ export interface Job {
   benefits?: string[];
   responsibilities?: string[];
   preferred_skills?: string[];
+  source?: 'linkedin' | 'demo' | 'careerpilot';
+  sourceUrl?: string;
 }
 
 export interface Application {
@@ -58,6 +60,28 @@ export interface Education {
   grade?: string;
 }
 
+export interface MissingSkillDetail {
+  skill: string;
+  reason: string;
+}
+
+export interface ImprovementSuggestion {
+  section: string;
+  original: string;
+  improved: string;
+  impact: 'High' | 'Medium' | 'Low';
+}
+
+export interface ResumeAnalysisData {
+  resumeScore: number;
+  scoreExplanation: string;
+  strengths: string[];
+  weaknesses: string[];
+  missingSkills: MissingSkillDetail[];
+  improvements: ImprovementSuggestion[];
+  recommendedRoles: string[];
+}
+
 export interface ResumeProfile {
   id: string;
   fullName: string;
@@ -70,46 +94,35 @@ export interface ResumeProfile {
   skills: string[];
   experiences: WorkExperience[];
   education: Education[];
+  updatedAt: string;
   fileName?: string;
   fileSize?: string;
-  updatedAt: string;
   rawText?: string;
   college?: string;
   degree?: string;
   graduation_year?: string;
-  projects?: Array<{ title: string; description: string; tech_stack?: string[]; link?: string }>;
+  projects?: Array<{
+    title: string;
+    tech_stack: string[];
+    description: string;
+    link?: string;
+  }>;
   certifications?: string[];
   achievements?: string[];
   languages?: string[];
+  analysisData?: ResumeAnalysisData;
 }
 
 export interface MatchAnalysis {
   matchScore: number;
+  fitRating: 'Strong Match' | 'Moderate Match' | 'Growth Opportunity' | 'Low Match';
   summary: string;
   strengths: string[];
   missingSkills: string[];
   partialMatches: string[];
   recommendations: string[];
-  fitRating: 'Strong Match' | 'Moderate Match' | 'Growth Opportunity' | 'Low Match';
   skill_match?: number;
   experience_match?: number;
   education_match?: number;
   role_fit?: number;
-}
-
-export interface CoachMessage {
-  id: string;
-  sender: 'user' | 'ai';
-  text: string;
-  timestamp: string;
-  suggestedPrompts?: string[];
-  actionType?: 'match' | 'resume' | 'cover_letter' | 'general';
-}
-
-export interface FilterState {
-  search: string;
-  location: string;
-  workMode: WorkMode | 'All';
-  experienceLevel: string;
-  minMatchScore: number;
 }

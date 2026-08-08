@@ -43,8 +43,9 @@ Skills: Node.js, Express.js, TypeScript, PostgreSQL, React, Git, REST APIs
 Experience: Software Developer Intern at Tech Solutions India. Built backend microservices in Express.js.`;
     }
 
-    // Call Gemini AI Service to parse structured JSON
-    const { parsedData, resumeScore } = await geminiService.analyzeResume(rawText);
+    // Call Gemini AI Service to parse structured JSON & analysis
+    const analysis = await geminiService.analyzeResume(rawText);
+    const { parsedData, resumeScore } = analysis;
 
     const supabase = getSupabase();
     let updatedProfile: Profile;
@@ -63,6 +64,7 @@ Experience: Software Developer Intern at Tech Solutions India. Built backend mic
       degree: parsedData.degree || 'B.Tech',
       college: parsedData.college || 'Vellore Institute of Technology (VIT)',
       graduation_year: parsedData.graduation_year || '2024',
+      summary: parsedData.summary || 'Computer Science Graduate with practical REST API & software engineering experience.',
       skills: parsedData.skills && parsedData.skills.length > 0
         ? parsedData.skills
         : ['JavaScript', 'TypeScript', 'Node.js', 'Express.js', 'React', 'PostgreSQL', 'Git'],
@@ -71,6 +73,7 @@ Experience: Software Developer Intern at Tech Solutions India. Built backend mic
       certifications: parsedData.certifications || [],
       achievements: parsedData.achievements || [],
       languages: parsedData.languages || ['English', 'Hindi'],
+      preferred_roles: analysis.recommendedRoles || ['Software Engineer', 'Backend Developer'],
       updated_at: new Date().toISOString(),
     };
 
@@ -81,6 +84,7 @@ Experience: Software Developer Intern at Tech Solutions India. Built backend mic
       raw_text: rawText,
       parsed_data: parsedData,
       resume_score: resumeScore,
+      analysis_result: analysis,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -99,7 +103,7 @@ Experience: Software Developer Intern at Tech Solutions India. Built backend mic
             profile_id: profileId,
             type: 'RESUME_ANALYSIS',
             input_data: { textLength: rawText.length, fileName: resumeRecord.file_name },
-            output_data: { parsedData, resumeScore },
+            output_data: analysis,
           });
         } else {
           updatedProfile = newProfileData;
@@ -125,6 +129,7 @@ Experience: Software Developer Intern at Tech Solutions India. Built backend mic
         profile: updatedProfile,
         resume: resumeRecord,
         resumeScore,
+        analysis,
       },
     });
   } catch (error) {

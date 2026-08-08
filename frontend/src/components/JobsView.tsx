@@ -6,6 +6,7 @@ interface Props {
   applications: Application[];
   onSelectJob: (job: Job) => void;
   onApplyJob: (job: Job) => void;
+  hasResume?: boolean;
 }
 
 const WORK_MODES = ['All', 'Remote', 'Hybrid', 'Onsite', 'On-site'] as const;
@@ -21,7 +22,7 @@ function getCompanyInitials(company: string): string {
     .slice(0, 3);
 }
 
-export function JobsView({ jobs, applications, onSelectJob, onApplyJob }: Props) {
+export function JobsView({ jobs, applications, onSelectJob, onApplyJob, hasResume }: Props) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('All');
   const [workModeFilter, setWorkModeFilter] = useState<string>('All');
@@ -61,9 +62,52 @@ export function JobsView({ jobs, applications, onSelectJob, onApplyJob }: Props)
     >
       {/* Page Header */}
       <div style={{ marginBottom: 'var(--space-lg)' }}>
-        <h1 className="text-headline-lg" style={{ color: 'var(--color-primary)', marginBottom: 16 }}>
+        <h1 className="text-headline-lg" style={{ color: 'var(--color-primary)', marginBottom: 12 }}>
           Find opportunities that fit your profile.
         </h1>
+
+        {/* Personalization Banner */}
+        {hasResume ? (
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface-container-low)',
+              border: '1px solid var(--color-outline-variant)',
+              borderRadius: 10,
+              padding: '12px 16px',
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ color: 'var(--color-accent-navy)', fontSize: 22 }}>
+              psychology
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-primary)' }}>
+              Jobs matched to your profile — Ranked by AI compatibility with your resume
+            </span>
+          </div>
+        ) : (
+          <div
+            style={{
+              backgroundColor: '#FAF9F6',
+              border: '1px dashed var(--color-outline-variant)',
+              borderRadius: 10,
+              padding: '12px 16px',
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ color: 'var(--color-accent-saffron)', fontSize: 22 }}>
+              info
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-primary)' }}>
+              Upload your resume in the Resume tab to unlock personalized job matching and explainable AI fit scores!
+            </span>
+          </div>
+        )}
 
         {/* BUG 1 FIX: Single Primary Search Bar directly below page heading */}
         <div style={{ position: 'relative', width: '100%', maxWidth: 640, marginBottom: 20 }}>
@@ -426,7 +470,7 @@ function FindJobCard({
       )}
 
       {/* Action */}
-      <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
+      <div style={{ marginTop: 'auto', display: 'flex', gap: 10 }}>
         <button
           className="btn-primary"
           onClick={() => onViewMatch(job)}
@@ -434,12 +478,52 @@ function FindJobCard({
             flex: 1,
             padding: '10px 16px',
             borderRadius: 8,
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 600,
           }}
         >
           View Match
         </button>
+
+        {job.source === 'linkedin' && job.sourceUrl ? (
+          <a
+            href={job.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              backgroundColor: '#0a66c2',
+              color: '#ffffff',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            LinkedIn
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>open_in_new</span>
+          </a>
+        ) : (
+          <button
+            onClick={() => onApply(job)}
+            disabled={isApplied}
+            style={{
+              padding: '10px 16px',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              backgroundColor: isApplied ? 'var(--color-surface-container-high)' : 'var(--color-accent-saffron)',
+              color: isApplied ? 'var(--color-on-surface-variant)' : '#000000',
+              border: 'none',
+              cursor: isApplied ? 'default' : 'pointer',
+            }}
+          >
+            {isApplied ? 'Applied' : 'Apply'}
+          </button>
+        )}
       </div>
     </div>
   );

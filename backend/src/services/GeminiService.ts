@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config/env';
-import { Profile, Job, JobMatch } from '../types';
+import { Profile, Job, JobMatch, ResumeAnalysisResult } from '../types';
 
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
@@ -45,44 +45,82 @@ export class GeminiService {
   }
 
   /**
-   * Analyze raw text from PDF resume and structure it into standardized JSON profile format
+   * Analyze raw text from PDF resume and structure it into standardized JSON profile format & deep analysis
    */
-  async analyzeResume(rawText: string): Promise<{ parsedData: Partial<Profile>; resumeScore: number }> {
+  async analyzeResume(rawText: string): Promise<ResumeAnalysisResult> {
     const prompt = `
-You are an expert AI Resume Parser and Career Architect.
-Extract structured candidate information from the following raw resume text.
+You are an expert AI Resume Parser & Senior Career Architect.
+Extract structured candidate information AND perform an in-depth resume quality audit.
 
 Return ONLY a valid JSON object matching this exact schema:
 {
-  "name": "Full Name",
-  "email": "email@example.com",
-  "phone": "+91 XXXXXXXXXX",
-  "location": "City, Country",
-  "education": "Degree in Major",
-  "degree": "B.Tech / B.E. / M.Tech / B.Sc / BCA",
-  "college": "University / College Name",
-  "graduation_year": "2024",
-  "skills": ["Skill 1", "Skill 2"],
-  "experience": [
+  "parsedData": {
+    "name": "Full Name",
+    "email": "email@example.com",
+    "phone": "+91 XXXXXXXXXX",
+    "location": "City, Country",
+    "summary": "2-3 sentence professional summary",
+    "education": "Degree in Major",
+    "degree": "B.Tech / B.E. / M.Tech / B.Sc / BCA",
+    "college": "University / College Name",
+    "graduation_year": "2024",
+    "skills": ["Skill 1", "Skill 2"],
+    "experience": [
+      {
+        "title": "Role Title",
+        "company": "Company Name",
+        "duration": "Duration e.g. Jun 2023 - Present",
+        "description": "Responsibilities and achievements"
+      }
+    ],
+    "projects": [
+      {
+        "title": "Project Name",
+        "tech_stack": ["React", "Node.js"],
+        "description": "Short summary of project",
+        "link": "https://..."
+      }
+    ],
+    "certifications": ["Cert 1"],
+    "achievements": ["Achievement 1"],
+    "languages": ["English", "Hindi"]
+  },
+  "resumeScore": 84,
+  "scoreExplanation": "Explanation of score based on skills, project depth, experience, and metric clarity.",
+  "strengths": [
+    "✓ Strong Node.js & REST API project experience",
+    "✓ Relevant B.Tech Computer Science degree",
+    "✓ Good database fundamentals with PostgreSQL"
+  ],
+  "weaknesses": [
+    "△ Project descriptions lack measurable impact metrics",
+    "△ Experience section needs more specific technical bullets",
+    "△ Cloud deployment technologies (AWS, Docker) are missing"
+  ],
+  "missingSkills": [
+    { "skill": "Docker", "reason": "Docker would strengthen your backend deployment profile and improve your fit for entry-level backend roles." },
+    { "skill": "AWS", "reason": "Cloud services (EC2, S3) are highly requested in Indian tech firms for software development engineers." },
+    { "skill": "Redis", "reason": "Caching is essential for high-concurrency payment and fintech roles." }
+  ],
+  "improvements": [
     {
-      "title": "Role Title",
-      "company": "Company Name",
-      "duration": "Duration e.g. Jun 2023 - Present",
-      "description": "Responsibilities and achievements"
+      "section": "Projects Section",
+      "original": "Built an e-commerce website.",
+      "improved": "Built a full-stack e-commerce platform using React, Node.js, and PostgreSQL with JWT authentication.",
+      "impact": "High"
+    },
+    {
+      "section": "Experience Section",
+      "original": "Worked on microservices.",
+      "improved": "Developed 5+ Node.js REST API microservice endpoints processing 10,000+ daily requests.",
+      "impact": "High"
     }
   ],
-  "projects": [
-    {
-      "title": "Project Name",
-      "tech_stack": ["React", "Node.js"],
-      "description": "Short summary of project",
-      "link": "https://..."
-    }
-  ],
-  "certifications": ["Cert 1"],
-  "achievements": ["Achievement 1"],
-  "languages": ["English", "Hindi"],
-  "resume_score": 85
+  "recommendedRoles": [
+    "Software Development Engineer I (Backend)",
+    "Full Stack Web Developer",
+    "Junior Software Engineer"
+  ]
 }
 
 RAW RESUME TEXT:
@@ -99,12 +137,25 @@ ${rawText}
     try {
       const cleaned = this.cleanJsonResponse(responseText);
       const json = JSON.parse(cleaned);
-      const resumeScore = typeof json.resume_score === 'number' ? json.resume_score : 80;
-      delete json.resume_score;
+
+      const parsedData = json.parsedData || json;
+      const resumeScore = typeof json.resumeScore === 'number' ? json.resumeScore : 84;
+      const scoreExplanation = json.scoreExplanation || 'Your resume demonstrates solid foundational skills, but project descriptions could include more metric impact.';
+      const strengths = Array.isArray(json.strengths) ? json.strengths : ['✓ Core technical skills matched', '✓ Relevant degree'];
+      const weaknesses = Array.isArray(json.weaknesses) ? json.weaknesses : ['△ Project metric details could be stronger'];
+      const missingSkills = Array.isArray(json.missingSkills) ? json.missingSkills : [{ skill: 'Docker', reason: 'Essential for containerized cloud deployment.' }];
+      const improvements = Array.isArray(json.improvements) ? json.improvements : [];
+      const recommendedRoles = Array.isArray(json.recommendedRoles) ? json.recommendedRoles : ['Software Engineer', 'Backend Developer'];
 
       return {
-        parsedData: json,
+        parsedData,
         resumeScore,
+        scoreExplanation,
+        strengths,
+        weaknesses,
+        missingSkills,
+        improvements,
+        recommendedRoles,
       };
     } catch (error) {
       console.warn('⚠️ Gemini JSON parse error, utilizing heuristic fallback:', error);
@@ -289,7 +340,7 @@ Return JSON:
 
   // --- Fallbacks for Offline / Quota / Unset Key Operation ---
 
-  private fallbackResumeAnalysis(rawText: string): { parsedData: Partial<Profile>; resumeScore: number } {
+  private fallbackResumeAnalysis(rawText: string): ResumeAnalysisResult {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     const phoneMatch = rawText.match(/(\+91[\-\s]?)?[6-9]\d{9}/);
@@ -306,12 +357,15 @@ Return JSON:
       detectedSkills.push('JavaScript', 'Node.js', 'React', 'SQL', 'Git');
     }
 
+    const calculatedScore = Math.min(95, Math.max(72, 65 + detectedSkills.length * 3));
+
     return {
       parsedData: {
-        name: lines[0] || 'Rahul Sharma',
+        name: lines[0] && lines[0].length < 40 ? lines[0] : 'Rahul Sharma',
         email: emailMatch ? emailMatch[0] : 'rahul.sharma@example.com',
         phone: phoneMatch ? phoneMatch[0] : '+91 9876543210',
         location: 'Bengaluru, India',
+        summary: 'Computer Science Graduate with practical REST API, Node.js, Express, and database microservice experience.',
         education: 'B.Tech in Computer Science and Engineering',
         degree: 'B.Tech',
         college: 'Vellore Institute of Technology (VIT)',
@@ -342,7 +396,42 @@ Return JSON:
         achievements: ['1st Runner Up - Hackathon 2024', 'Solved 300+ LeetCode problems'],
         languages: ['English', 'Hindi'],
       },
-      resumeScore: Math.min(95, 65 + detectedSkills.length * 4),
+      resumeScore: calculatedScore,
+      scoreExplanation: 'Your resume demonstrates strong backend engineering skills and REST API projects, but project bullet points lack measurable metric outcomes.',
+      strengths: [
+        '✓ Strong Node.js & REST API project experience',
+        '✓ Relevant B.Tech Computer Science degree',
+        '✓ Good database fundamentals with PostgreSQL & SQL',
+      ],
+      weaknesses: [
+        '△ Project descriptions lack quantifiable metric outcomes (e.g. latency or throughput gains)',
+        '△ Experience section needs more specific technical bullet points',
+        '△ Cloud deployment technologies (AWS, Docker) should be highlighted',
+      ],
+      missingSkills: [
+        { skill: 'Docker', reason: 'Docker would strengthen your backend deployment profile and improve your fit for entry-level backend roles.' },
+        { skill: 'AWS', reason: 'Cloud infrastructure skills (EC2, S3) are highly sought after by top Indian tech employers.' },
+        { skill: 'Redis', reason: 'In-memory caching is vital for high-concurrency payment and fintech engineering teams (Razorpay, PhonePe).' },
+      ],
+      improvements: [
+        {
+          section: 'Projects Section',
+          original: 'Built an e-commerce website.',
+          improved: 'Built a full-stack e-commerce platform using React, Node.js, and PostgreSQL with JWT authentication.',
+          impact: 'High',
+        },
+        {
+          section: 'Experience Section',
+          original: 'Worked on microservices.',
+          improved: 'Developed 5+ Node.js REST API microservice endpoints processing 10,000+ daily requests.',
+          impact: 'High',
+        },
+      ],
+      recommendedRoles: [
+        'Software Development Engineer I (Backend)',
+        'Full Stack Web Developer',
+        'Junior Software Engineer',
+      ],
     };
   }
 

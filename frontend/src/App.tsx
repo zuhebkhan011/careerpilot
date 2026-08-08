@@ -240,6 +240,7 @@ export default function App() {
                   applications={applications}
                   onSelectJob={(j) => setMatchJob(j)}
                   onApplyJob={handleApplyJob}
+                  hasResume={!!resume.skills?.length || !!resume.rawText}
                 />
               )}
               {activeTab === 'applications' && (
@@ -253,7 +254,11 @@ export default function App() {
                 />
               )}
               {activeTab === 'resume' && (
-                <ResumeView resume={resume} onSaveResume={handleSaveResume} />
+                <ResumeView
+                  resume={resume}
+                  onSaveResume={handleSaveResume}
+                  onFindJobsForMe={() => setActiveTab('jobs')}
+                />
               )}
               {activeTab === 'coach' && (
                 <AICareerCoachView resume={resume} />
