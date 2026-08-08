@@ -87,6 +87,14 @@ export interface JobMatch {
   partial_matches: string[];
   reasoning: string;
   recommendations: string[];
+  recommendation_details?: {
+    summary: string;
+    whyThisRole: string;
+    applicationReadiness: 'Ready to apply' | 'Apply while improving' | 'Improve key skills first';
+    whatToHighlight: string[];
+    whatToImprove: string[];
+    nextAction: string;
+  };
   created_at?: string;
   job?: Job;
 }

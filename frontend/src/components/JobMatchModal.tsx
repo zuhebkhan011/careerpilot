@@ -75,6 +75,7 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
   const [match, setMatch] = useState<MatchAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [tracking, setTracking] = useState(false);
+  const [error, setError] = useState('');
 
   // Body scroll lock & Escape key listener
   useEffect(() => {
@@ -94,35 +95,30 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
     };
   }, [job, onClose]);
 
-  // Load match data
-  useEffect(() => {
+  const fetchMatchData = async () => {
     if (!job) { setMatch(null); return; }
-    const doMatch = async () => {
-      setLoading(true);
-      try {
-        const result = await apiService.getJobMatch(job.id, 'demo-profile-1');
-        if (result) setMatch(result);
-      } catch {
-        setMatch({
-          matchScore: job.matchScore || 0,
-          summary: `You are a competitive candidate for ${job.role} at ${job.company}.`,
-          strengths: job.skillsRequired?.slice(0, 3) ?? [],
-          missingSkills: [],
-          partialMatches: [],
-          recommendations: ['Keep building real-world projects.'],
-          fitRating: 'Moderate Match',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    doMatch();
+    setLoading(true);
+    setError('');
+    const profileId = sessionStorage.getItem('cp_profile_id') || 'demo-profile-1';
+    try {
+      const result = await apiService.getJobMatch(job.id, profileId);
+      if (result) setMatch(result);
+    } catch (e: any) {
+      setError(e.message || 'Recommendation could not be generated.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load match data on job change
+  useEffect(() => {
+    fetchMatchData();
   }, [job?.id]);
 
   if (!job) return null;
 
-  const initials = getCompanyInitials(job.company);
   const score = match?.matchScore ?? job.matchScore ?? 0;
+  const recDetails = match?.recommendationDetails;
 
   const handleTrack = async () => {
     setTracking(true);
@@ -133,8 +129,17 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
     }
   };
 
+  const getReadinessStyle = (readiness?: string) => {
+    if (readiness === 'Ready to apply') {
+      return { bg: '#e8f5e9', color: '#1b5e20', border: '#a5d6a7' };
+    }
+    if (readiness === 'Apply while improving') {
+      return { bg: '#fff3e0', color: '#e65100', border: '#ffe0b2' };
+    }
+    return { bg: '#ffebee', color: '#c62828', border: '#ffcdd2' };
+  };
+
   const modalContent = (
-    /* BUG 3 FIX: Viewport-level Backdrop Overlay */
     <div
       onClick={onClose}
       style={{
@@ -157,8 +162,8 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
         style={{
           backgroundColor: 'var(--color-surface-container-lowest)',
           width: '100%',
-          maxWidth: 780,
-          maxHeight: '85vh',
+          maxWidth: 820,
+          maxHeight: '90vh',
           borderRadius: 16,
           boxShadow: '0 24px 64px rgba(0,0,0,0.24)',
           border: '1px solid var(--color-outline-variant)',
@@ -168,7 +173,7 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
           position: 'relative',
         }}
       >
-        {/* Fixed Header (Does not scroll, content stays inside) */}
+        {/* Fixed Header */}
         <header
           style={{
             padding: '20px 24px',
@@ -188,7 +193,6 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
               </span>
               <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--color-secondary)' }}>psychology</span>
             </div>
-            {/* Title wrapping naturally inside header */}
             <h2
               className="text-headline-md"
               style={{
@@ -240,25 +244,54 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
           className="kanban-scroll"
         >
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="animate-pulse"
-                  style={{
-                    height: 80,
-                    borderRadius: 8,
-                    backgroundColor: 'var(--color-surface-container-low)',
-                  }}
-                />
-              ))}
-              <p className="text-body-sm" style={{ color: 'var(--color-on-surface-variant)', textAlign: 'center' }}>
-                Analyzing profile alignment...
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '24px 0' }}>
+              <div
+                className="animate-pulse"
+                style={{
+                  height: 90,
+                  borderRadius: 10,
+                  backgroundColor: 'var(--color-surface-container-low)',
+                }}
+              />
+              <div
+                className="animate-pulse"
+                style={{
+                  height: 120,
+                  borderRadius: 10,
+                  backgroundColor: 'var(--color-surface-container-low)',
+                }}
+              />
+              <p className="text-body-md" style={{ color: 'var(--color-on-surface)', textAlign: 'center', fontWeight: 600 }}>
+                Generating CareerPilot recommendation & semantic fit breakdown...
               </p>
+            </div>
+          ) : error ? (
+            <div
+              style={{
+                padding: 24,
+                textAlign: 'center',
+                backgroundColor: 'var(--color-error-container)',
+                borderRadius: 10,
+                border: '1px solid rgba(186,26,26,0.2)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 36, color: 'var(--color-error)', marginBottom: 8 }}>
+                error
+              </span>
+              <p className="text-body-md" style={{ color: 'var(--color-on-error-container)', marginBottom: 16 }}>
+                Recommendation could not be generated.
+              </p>
+              <button
+                className="btn-primary"
+                onClick={fetchMatchData}
+                style={{ padding: '8px 16px', fontSize: 14 }}
+              >
+                Retry Recommendation
+              </button>
             </div>
           ) : match ? (
             <>
-              {/* AI Evaluation */}
+              {/* AI Reasoning Overview */}
               <section
                 style={{
                   backgroundColor: '#FAF9F6',
@@ -268,182 +301,215 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
                 }}
               >
                 <h3
-                  className="text-title-md"
-                  style={{ color: 'var(--color-primary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}
+                  className="text-label-md"
+                  style={{
+                    color: 'var(--color-outline)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: 8,
+                  }}
                 >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: 20, color: 'var(--color-accent-saffron)', fontVariationSettings: "'FILL' 1" }}
-                  >
-                    lightbulb
-                  </span>
-                  AI Evaluation
+                  Candidate Alignment Summary
                 </h3>
-                <p className="text-body-md" style={{ color: 'var(--color-on-surface)', margin: 0, lineHeight: 1.6 }}>
+                <p className="text-body-md" style={{ color: 'var(--color-primary)', lineHeight: 1.6, margin: 0 }}>
                   {match.summary}
                 </p>
               </section>
 
-              {/* Detailed Breakdown */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }} className="modal-breakdown-grid">
-                {/* Strengths */}
-                <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <h3
-                    className="text-title-md"
-                    style={{
-                      color: 'var(--color-primary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      borderBottom: '1px solid var(--color-outline-variant)',
-                      paddingBottom: 8,
-                      margin: 0,
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-secondary)' }}>check_circle</span>
-                    Why you're a strong match
-                  </h3>
-                  <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, padding: 0, listStyle: 'none' }}>
-                    {match.strengths?.length > 0 ? (
-                      match.strengths.map((s, i) => (
-                        <li
-                          key={i}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 10,
-                            backgroundColor: 'var(--color-surface-container-low)',
-                            padding: 12,
-                            borderRadius: 6,
-                            border: '1px solid var(--color-outline-variant)',
-                          }}
-                        >
-                          <span
-                            className="material-symbols-outlined"
-                            style={{ fontSize: 18, color: 'var(--color-accent-navy)', marginTop: 2, flexShrink: 0 }}
-                          >
-                            verified
-                          </span>
-                          <span className="text-body-md" style={{ color: 'var(--color-primary)' }}>{s}</span>
-                        </li>
-                      ))
-                    ) : (
-                      <li className="text-body-sm" style={{ color: 'var(--color-on-surface-variant)' }}>Core technical skills align well with job requirement.</li>
-                    )}
-                  </ul>
-                </section>
-
-                {/* Right column: Partial + Skill Gaps */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Partial matches */}
-                  {match.partialMatches?.length > 0 && (
-                    <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <h3
-                        className="text-title-md"
-                        style={{
-                          color: 'var(--color-primary)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          borderBottom: '1px solid var(--color-outline-variant)',
-                          paddingBottom: 8,
-                          margin: 0,
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-accent-saffron)' }}>warning</span>
-                        Partial Match
-                      </h3>
-                      <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 0, listStyle: 'none' }}>
-                        {match.partialMatches.map((s, i) => (
+              {/* Grid: Strengths vs Skill Gaps */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="modal-breakdown-grid">
+                {/* Why You Match */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <section style={{ backgroundColor: 'var(--color-surface-container-lowest)', borderRadius: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#2e7d32' }}>check_circle</span>
+                      <h4 className="text-title-sm" style={{ color: 'var(--color-primary)', fontWeight: 700, margin: 0 }}>
+                        Why You Match
+                      </h4>
+                    </div>
+                    {match.strengths.length > 0 ? (
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {match.strengths.map((s, idx) => (
                           <li
-                            key={i}
+                            key={idx}
                             style={{
                               display: 'flex',
                               alignItems: 'flex-start',
-                              gap: 10,
-                              backgroundColor: '#FAF9F6',
-                              padding: 10,
+                              gap: 8,
+                              backgroundColor: '#f1f8e9',
+                              padding: '8px 12px',
                               borderRadius: 6,
-                              border: '1px solid var(--color-outline-variant)',
+                              border: '1px solid #c8e6c9',
                             }}
                           >
-                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--color-accent-saffron)', marginTop: 2, flexShrink: 0 }}>cloud</span>
-                            <span className="text-body-md" style={{ color: 'var(--color-primary)' }}>{s}</span>
+                            <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#2e7d32', marginTop: 2, flexShrink: 0 }}>
+                              check
+                            </span>
+                            <span className="text-body-sm" style={{ color: '#1b5e20', fontWeight: 600 }}>{s}</span>
                           </li>
                         ))}
                       </ul>
-                    </section>
-                  )}
+                    ) : (
+                      <p className="text-body-sm" style={{ color: 'var(--color-on-surface-variant)' }}>No direct tech matches.</p>
+                    )}
+                  </section>
 
-                  {/* Missing Skills */}
-                  {match.missingSkills?.length > 0 && (
-                    <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <h3
-                        className="text-title-md"
-                        style={{
-                          color: 'var(--color-primary)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          borderBottom: '1px solid var(--color-outline-variant)',
-                          paddingBottom: 8,
-                          margin: 0,
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-error)' }}>cancel</span>
-                        Skill Gaps
-                      </h3>
-                      <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 0, listStyle: 'none' }}>
-                        {match.missingSkills.map((s, i) => (
-                          <li
-                            key={i}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: 10,
-                              backgroundColor: '#FAF9F6',
-                              padding: 10,
-                              borderRadius: 6,
-                              border: '1px solid var(--color-outline-variant)',
-                            }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--color-outline)', marginTop: 2, flexShrink: 0 }}>block</span>
-                            <span className="text-body-md" style={{ color: 'var(--color-primary)' }}>{s}</span>
+                  {/* Partial Matches */}
+                  {match.partialMatches && match.partialMatches.length > 0 && (
+                    <section style={{ marginTop: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#e65100' }}>cloud_sync</span>
+                        <h4 className="text-title-sm" style={{ color: 'var(--color-primary)', fontWeight: 700, margin: 0 }}>
+                          Partial Matches
+                        </h4>
+                      </div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {match.partialMatches.map((pm, idx) => (
+                          <li key={idx} className="text-body-sm" style={{ color: '#e65100', backgroundColor: '#fff3e0', padding: '6px 10px', borderRadius: 6, border: '1px solid #ffe0b2' }}>
+                            ~ {pm}
                           </li>
                         ))}
                       </ul>
                     </section>
                   )}
                 </div>
+
+                {/* Skill Gaps */}
+                <div>
+                  <section style={{ backgroundColor: 'var(--color-surface-container-lowest)', borderRadius: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#c62828' }}>cancel</span>
+                      <h4 className="text-title-sm" style={{ color: 'var(--color-primary)', fontWeight: 700, margin: 0 }}>
+                        Skill Gaps
+                      </h4>
+                    </div>
+                    {match.missingSkills.length > 0 ? (
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {match.missingSkills.map((s, idx) => (
+                          <li
+                            key={idx}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: 8,
+                              backgroundColor: '#ffebee',
+                              padding: '8px 12px',
+                              borderRadius: 6,
+                              border: '1px solid #ffcdd2',
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#c62828', marginTop: 2, flexShrink: 0 }}>
+                              block
+                            </span>
+                            <span className="text-body-sm" style={{ color: '#b71c1c', fontWeight: 600 }}>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-body-sm" style={{ color: '#2e7d32', fontWeight: 600 }}>No major skill gaps identified!</p>
+                    )}
+                  </section>
+                </div>
               </div>
 
-              {/* Recommendation CTA */}
-              {match.recommendations?.length > 0 && (
-                <section
-                  style={{
-                    backgroundColor: 'var(--color-accent-navy)',
-                    color: '#ffffff',
-                    padding: 20,
-                    borderRadius: 10,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
+              {/* RICH CAREERPILOT RECOMMENDATION CARD */}
+              <section
+                style={{
+                  backgroundColor: 'var(--color-accent-navy)',
+                  color: '#ffffff',
+                  padding: 20,
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                   <h4
                     className="text-title-lg"
                     style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: '#ffffff' }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-accent-saffron)' }}>rocket_launch</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: 22, color: 'var(--color-accent-saffron)' }}>rocket_launch</span>
                     CareerPilot Recommendation
                   </h4>
-                  <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.5 }}>
-                    {match.recommendations[0]}
+
+                  {recDetails?.applicationReadiness && (
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        backgroundColor: getReadinessStyle(recDetails.applicationReadiness).bg,
+                        color: getReadinessStyle(recDetails.applicationReadiness).color,
+                        border: `1px solid ${getReadinessStyle(recDetails.applicationReadiness).border}`,
+                        padding: '4px 12px',
+                        borderRadius: 9999,
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      Readiness: {recDetails.applicationReadiness}
+                    </span>
+                  )}
+                </div>
+
+                {/* Summary / Why this role */}
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: 14, borderRadius: 8 }}>
+                  <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.95)', margin: 0, lineHeight: 1.6, fontWeight: 500 }}>
+                    {recDetails?.summary || match.recommendations[0] || `Personalized evaluation for ${job.role} at ${job.company}.`}
                   </p>
-                </section>
-              )}
+                  {recDetails?.whyThisRole && (
+                    <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.8)', marginTop: 8, marginBottom: 0, lineHeight: 1.5 }}>
+                      <strong>Why this role:</strong> {recDetails.whyThisRole}
+                    </p>
+                  )}
+                </div>
+
+                {/* What to Highlight & What to Improve */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="rec-details-grid">
+                  {recDetails?.whatToHighlight && recDetails.whatToHighlight.length > 0 && (
+                    <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-accent-saffron)', display: 'block', marginBottom: 6 }}>
+                        What to Highlight
+                      </span>
+                      <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, color: 'rgba(255,255,255,0.9)' }}>
+                        {recDetails.whatToHighlight.map((h, i) => (
+                          <li key={i} style={{ marginBottom: 4 }}>{h}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {recDetails?.whatToImprove && recDetails.whatToImprove.length > 0 && (
+                    <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#ff8a80', display: 'block', marginBottom: 6 }}>
+                        What to Improve
+                      </span>
+                      <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, color: 'rgba(255,255,255,0.9)' }}>
+                        {recDetails.whatToImprove.map((imp, i) => (
+                          <li key={i} style={{ marginBottom: 4 }}>{imp}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Next Action */}
+                {(recDetails?.nextAction || match.recommendations?.[0]) && (
+                  <div style={{ backgroundColor: 'rgba(244,162,97,0.15)', border: '1px solid rgba(244,162,97,0.4)', padding: 12, borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--color-accent-saffron)', marginTop: 2, flexShrink: 0 }}>
+                      flag
+                    </span>
+                    <div>
+                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-accent-saffron)', display: 'block' }}>
+                        Next Recommended Action
+                      </span>
+                      <p className="text-body-sm" style={{ color: '#ffffff', margin: 0, fontWeight: 600, marginTop: 2 }}>
+                        {recDetails?.nextAction || match.recommendations[0]}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </section>
             </>
           ) : null}
         </main>
@@ -518,6 +584,7 @@ export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
       <style>{`
         @media (max-width: 640px) {
           .modal-breakdown-grid { grid-template-columns: 1fr !important; }
+          .rec-details-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

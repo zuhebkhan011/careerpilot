@@ -121,6 +121,14 @@ export interface MatchAnalysis {
   missingSkills: string[];
   partialMatches: string[];
   recommendations: string[];
+  recommendationDetails?: {
+    summary: string;
+    whyThisRole: string;
+    applicationReadiness: 'Ready to apply' | 'Apply while improving' | 'Improve key skills first';
+    whatToHighlight: string[];
+    whatToImprove: string[];
+    nextAction: string;
+  };
   skill_match?: number;
   experience_match?: number;
   education_match?: number;

@@ -206,7 +206,15 @@ Return ONLY a valid JSON object matching this schema:
   "reasoning": "2-3 sentence personalized explanation referencing candidate's specific skills vs job requirements.",
   "recommendations": [
     "Actionable tip tailored to candidate profile"
-  ]
+  ],
+  "recommendation_details": {
+    "summary": "1-2 sentence recommendation overview aligned with match score",
+    "whyThisRole": "Specific reason candidate skills match or partially align with this job",
+    "applicationReadiness": "Ready to apply OR Apply while improving OR Improve key skills first",
+    "whatToHighlight": ["Candidate project/skill 1 to highlight in application", "Skill 2 to highlight"],
+    "whatToImprove": ["Action 1 to close key skill gaps"],
+    "nextAction": "Clear next practical step before or during application"
+  }
 }
 `;
 
@@ -219,10 +227,13 @@ Return ONLY a valid JSON object matching this schema:
       const cleaned = this.cleanJsonResponse(responseText);
       const parsed = JSON.parse(cleaned);
 
+      const matchScore = Math.min(100, Math.max(0, parsed.match_score || 75));
+      const readiness = matchScore >= 80 ? 'Ready to apply' : matchScore >= 60 ? 'Apply while improving' : 'Improve key skills first';
+
       return {
         profile_id: profile.id,
         job_id: job.id,
-        match_score: Math.min(100, Math.max(0, parsed.match_score || 75)),
+        match_score: matchScore,
         skill_match: Math.min(100, Math.max(0, parsed.skill_match || 75)),
         experience_match: Math.min(100, Math.max(0, parsed.experience_match || 75)),
         education_match: Math.min(100, Math.max(0, parsed.education_match || 80)),
@@ -232,6 +243,14 @@ Return ONLY a valid JSON object matching this schema:
         partial_matches: Array.isArray(parsed.partial_matches) ? parsed.partial_matches : [],
         reasoning: parsed.reasoning || `Candidate profile evaluated against ${job.role} at ${job.company}.`,
         recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+        recommendation_details: parsed.recommendation_details || {
+          summary: parsed.reasoning || `Candidate demonstrates alignment with ${job.role}.`,
+          whyThisRole: `Your technical stack aligns with key requirements for ${job.role} at ${job.company}.`,
+          applicationReadiness: readiness,
+          whatToHighlight: parsed.strengths || [],
+          whatToImprove: (parsed.missing_skills || []).map((m: string) => `Strengthen hands-on experience in ${m}`),
+          nextAction: (parsed.recommendations || [])[0] || `Apply to ${job.role} while highlighting core projects.`,
+        },
       };
     } catch (error) {
       console.warn('⚠️ Gemini API error during job matching, utilizing fallback:', error);
@@ -496,7 +515,21 @@ Return ONLY a valid JSON object matching this schema:
     const missing = requiredSkills.filter(s => !candidateSkills.some(cs => cs.includes(s) || s.includes(cs)));
 
     const skillScore = requiredSkills.length > 0 ? Math.round((matched.length / requiredSkills.length) * 100) : 80;
-    const finalScore = Math.max(60, Math.min(98, skillScore));
+    const finalScore = Math.max(40, Math.min(98, skillScore));
+
+    const readiness: 'Ready to apply' | 'Apply while improving' | 'Improve key skills first' =
+      finalScore >= 80 ? 'Ready to apply' : finalScore >= 60 ? 'Apply while improving' : 'Improve key skills first';
+
+    const summaryText =
+      finalScore >= 80
+        ? `Strong fit. Your technical profile aligns closely with the requirements for ${job.role} at ${job.company}.`
+        : finalScore >= 60
+        ? `Moderate fit. Your ${matched.join(', ') || 'core'} experience matches main requirements, but ${missing.join(', ') || 'some skills'} are gaps.`
+        : `Growth opportunity. Substantial skill gaps exist for ${job.role} at ${job.company}.`;
+
+    const nextActionText = missing.length > 0
+      ? `Build or strengthen a project using ${missing.slice(0, 2).join(' and ')} before or during your application.`
+      : `Apply now to ${job.role} and highlight your core project achievements.`;
 
     return {
       profile_id: profile.id,
@@ -510,9 +543,15 @@ Return ONLY a valid JSON object matching this schema:
       missing_skills: missing.length > 0 ? missing : ['Cloud Containerization (Docker)'],
       partial_matches: ['Relational database design & optimization'],
       reasoning: `Candidate exhibits ${finalScore}% match for ${job.role} at ${job.company}. Matched skills: ${matched.join(', ') || 'core software stack'}.`,
-      recommendations: missing.length > 0
-        ? [`Familiarize yourself with ${missing.slice(0, 2).join(', ')} to maximize application success.`]
-        : ['Highlight key project achievements during interviews.'],
+      recommendations: [nextActionText],
+      recommendation_details: {
+        summary: summaryText,
+        whyThisRole: `Your technical background in ${matched.join(', ') || 'software development'} maps directly to key requirements at ${job.company}.`,
+        applicationReadiness: readiness,
+        whatToHighlight: matched.length > 0 ? matched.map(m => `Highlight hands-on experience in ${m}`) : ['Highlight computer science core subjects'],
+        whatToImprove: missing.length > 0 ? missing.map(m => `Build a project demonstrating ${m}`) : ['Expand cloud deployment section'],
+        nextAction: nextActionText,
+      },
     };
   }
 

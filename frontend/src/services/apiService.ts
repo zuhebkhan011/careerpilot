@@ -142,14 +142,25 @@ export const apiService = {
     else if (data.match_score >= 50) fitRating = 'Growth Opportunity';
     else fitRating = 'Low Match';
 
+    const score = data.match_score || 75;
+    const recDetails = data.recommendation_details || {
+      summary: data.reasoning || `Match score: ${score}%.`,
+      whyThisRole: `Your technical background aligns with role requirements.`,
+      applicationReadiness: score >= 80 ? 'Ready to apply' : score >= 60 ? 'Apply while improving' : 'Improve key skills first',
+      whatToHighlight: data.strengths || [],
+      whatToImprove: (data.missing_skills || []).map((m: string) => `Strengthen hands-on experience in ${m}`),
+      nextAction: (data.recommendations || [])[0] || 'Apply while continuing to build projects.',
+    };
+
     return {
-      matchScore: data.match_score || 85,
+      matchScore: score,
       fitRating,
       summary: data.reasoning || 'Candidate demonstrates good core alignment for role.',
       strengths: data.strengths || [],
       missingSkills: data.missing_skills || [],
       partialMatches: data.partial_matches || [],
       recommendations: data.recommendations || [],
+      recommendationDetails: recDetails,
       skill_match: data.skill_match,
       experience_match: data.experience_match,
       education_match: data.education_match,
