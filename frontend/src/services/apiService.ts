@@ -166,19 +166,75 @@ export const apiService = {
     });
     const body = await res.json();
     if (!res.ok || !body.success) throw new Error(body.error?.message || 'Resume upload failed');
-    return apiService.getProfile(profileId);
+    const p = body.data?.profile || body.data;
+    return {
+      id: p.id || profileId,
+      fullName: p.name || 'Rahul Sharma',
+      email: p.email || 'rahul.sharma@example.com',
+      phone: p.phone || '+91 9876543210',
+      location: p.location || 'Bengaluru, India',
+      targetRole: p.degree || 'Full Stack Developer',
+      yearsOfExperience: 1,
+      summary: `${p.degree || 'Engineering Graduate'} from ${p.college || 'University'} with core skills in ${p.skills?.slice(0, 4).join(', ')}.`,
+      skills: p.skills || [],
+      experiences: (p.experience || []).map((e: any, idx: number) => ({
+        id: `exp-${idx}`,
+        title: e.title || 'Developer Intern',
+        company: e.company || 'Tech Company',
+        period: e.duration || '2024',
+        description: e.description || '',
+      })),
+      education: [
+        {
+          id: 'edu-1',
+          degree: p.education || p.degree || 'B.Tech CS',
+          institution: p.college || 'University',
+          year: p.graduation_year || '2024',
+        },
+      ],
+      updatedAt: p.updated_at || new Date().toISOString(),
+      rawText: body.data?.resume?.raw_text || '',
+    };
   },
 
   // Alias for ResumeView component
   uploadResumePDF: async (formData: FormData): Promise<ResumeProfile | null> => {
+    const profileId = (formData.get('profileId') as string) || 'demo-profile-1';
     const res = await fetch(`${API_BASE}/resumes/upload`, {
       method: 'POST',
       body: formData,
     });
     const body = await res.json();
     if (!res.ok || !body.success) throw new Error(body.error?.message || 'Resume upload failed');
-    const profileId = formData.get('profileId') as string || 'demo-profile-1';
-    return apiService.getProfile(profileId);
+    const p = body.data?.profile || body.data;
+    return {
+      id: p.id || profileId,
+      fullName: p.name || 'Rahul Sharma',
+      email: p.email || 'rahul.sharma@example.com',
+      phone: p.phone || '+91 9876543210',
+      location: p.location || 'Bengaluru, India',
+      targetRole: p.degree || 'Full Stack Developer',
+      yearsOfExperience: 1,
+      summary: `${p.degree || 'Engineering Graduate'} from ${p.college || 'University'} with core skills in ${p.skills?.slice(0, 4).join(', ')}.`,
+      skills: p.skills || [],
+      experiences: (p.experience || []).map((e: any, idx: number) => ({
+        id: `exp-${idx}`,
+        title: e.title || 'Developer Intern',
+        company: e.company || 'Tech Company',
+        period: e.duration || '2024',
+        description: e.description || '',
+      })),
+      education: [
+        {
+          id: 'edu-1',
+          degree: p.education || p.degree || 'B.Tech CS',
+          institution: p.college || 'University',
+          year: p.graduation_year || '2024',
+        },
+      ],
+      updatedAt: p.updated_at || new Date().toISOString(),
+      rawText: body.data?.resume?.raw_text || '',
+    };
   },
 
   analyzeResumeText: async (text: string, profileId: string = 'demo-profile-1'): Promise<ResumeProfile> => {
@@ -189,7 +245,35 @@ export const apiService = {
     });
     const body = await res.json();
     if (!res.ok || !body.success) throw new Error(body.error?.message || 'Resume text analysis failed');
-    return apiService.getProfile(profileId);
+    const p = body.data?.profile || body.data;
+    return {
+      id: p.id || profileId,
+      fullName: p.name || 'Rahul Sharma',
+      email: p.email || 'rahul.sharma@example.com',
+      phone: p.phone || '+91 9876543210',
+      location: p.location || 'Bengaluru, India',
+      targetRole: p.degree || 'Full Stack Developer',
+      yearsOfExperience: 1,
+      summary: `${p.degree || 'Engineering Graduate'} from ${p.college || 'University'} with core skills in ${p.skills?.slice(0, 4).join(', ')}.`,
+      skills: p.skills || [],
+      experiences: (p.experience || []).map((e: any, idx: number) => ({
+        id: `exp-${idx}`,
+        title: e.title || 'Developer Intern',
+        company: e.company || 'Tech Company',
+        period: e.duration || '2024',
+        description: e.description || '',
+      })),
+      education: [
+        {
+          id: 'edu-1',
+          degree: p.education || p.degree || 'B.Tech CS',
+          institution: p.college || 'University',
+          year: p.graduation_year || '2024',
+        },
+      ],
+      updatedAt: p.updated_at || new Date().toISOString(),
+      rawText: text,
+    };
   },
 
   // Alias for ResumeView

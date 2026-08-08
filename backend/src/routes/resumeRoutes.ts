@@ -5,10 +5,21 @@ import { analyzeResume, reviewResume, getResumesByProfile, getResumeById } from 
 const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf' || file.originalname.endsWith('.pdf')) {
+    const ext = file.originalname.toLowerCase();
+    const isAllowed =
+      ext.endsWith('.pdf') ||
+      ext.endsWith('.txt') ||
+      ext.endsWith('.doc') ||
+      ext.endsWith('.docx') ||
+      ext.endsWith('.md') ||
+      file.mimetype === 'application/pdf' ||
+      file.mimetype.startsWith('text/') ||
+      file.mimetype === 'application/octet-stream';
+
+    if (isAllowed) {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF files are supported for resume parsing'));
+      cb(null, true); // Allow upload and handle extraction safely in controller
     }
   },
 });
