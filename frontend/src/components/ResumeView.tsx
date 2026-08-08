@@ -95,40 +95,13 @@ export function ResumeView({ resume, onSaveResume, onFindJobsForMe }: Props) {
     await handleTextAnalysis();
   };
 
-  const analysis = resume.analysisData || {
-    resumeScore: resume.skills?.length ? 84 : 75,
-    scoreExplanation: 'Your resume demonstrates solid backend engineering skills and REST API projects, but project descriptions could include more metric impact.',
-    strengths: [
-      '✓ Strong Node.js & REST API project experience',
-      '✓ Relevant B.Tech Computer Science degree',
-      '✓ Good database fundamentals with PostgreSQL',
-    ],
-    weaknesses: [
-      '△ Project descriptions lack measurable impact metrics (e.g. latency or throughput gains)',
-      '△ Experience section needs more specific technical bullet points',
-      '△ Cloud deployment technologies (AWS, Docker) should be highlighted',
-    ],
-    missingSkills: [
-      { skill: 'Docker', reason: 'Docker would strengthen your backend deployment profile and improve your fit for entry-level backend roles.' },
-      { skill: 'AWS', reason: 'Cloud infrastructure skills (EC2, S3) are highly sought after by top Indian tech employers.' },
-      { skill: 'Redis', reason: 'In-memory caching is vital for high-concurrency payment and fintech engineering teams.' },
-    ],
-    improvements: [
-      {
-        section: 'Projects Section',
-        original: 'Built an e-commerce website.',
-        improved: 'Built a full-stack e-commerce platform using React, Node.js, and PostgreSQL with JWT authentication.',
-        impact: 'High' as const,
-      },
-      {
-        section: 'Experience Section',
-        original: 'Worked on microservices.',
-        improved: 'Developed 5+ Node.js REST API microservice endpoints processing 10,000+ daily requests.',
-        impact: 'High' as const,
-      },
-    ],
-    recommendedRoles: ['Software Development Engineer I (Backend)', 'Full Stack Web Developer', 'Junior Software Engineer'],
-  };
+  const analysis = resume.analysisData || null;
+
+  React.useEffect(() => {
+    if (analysis) {
+      setView('analysis');
+    }
+  }, [analysis]);
 
   return (
     <div
@@ -390,7 +363,7 @@ export function ResumeView({ resume, onSaveResume, onFindJobsForMe }: Props) {
       )}
 
       {/* Analysis View */}
-      {view === 'analysis' && (
+      {view === 'analysis' && analysis && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
           {/* Hero Bento: Score Card + Overview */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-gutter)' }} className="resume-bento-grid">

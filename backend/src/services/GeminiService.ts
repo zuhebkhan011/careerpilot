@@ -345,93 +345,138 @@ Return JSON:
     const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     const phoneMatch = rawText.match(/(\+91[\-\s]?)?[6-9]\d{9}/);
 
+    // Dynamic candidate name from first non-header line
+    let candidateName = 'Candidate Name';
+    if (lines.length > 0) {
+      const firstLine = lines[0].replace(/^(resume|curriculum vitae|cv)\s*/i, '').trim();
+      if (firstLine.length > 2 && firstLine.length < 40 && !firstLine.includes('@')) {
+        candidateName = firstLine;
+      }
+    }
+
+    // Dynamic skill detection from raw text
     const detectedSkills: string[] = [];
-    const techKeywords = ['JavaScript', 'TypeScript', 'Node.js', 'React', 'Express', 'Python', 'Java', 'SQL', 'MongoDB', 'PostgreSQL', 'HTML', 'CSS', 'Git', 'AWS', 'Docker', 'C++'];
+    const techKeywords = [
+      'Java', 'Spring Boot', 'Spring', 'MySQL', 'Hibernate', 'Microservices', 'Maven', 'JUnit',
+      'React', 'TypeScript', 'Node.js', 'Express', 'PostgreSQL', 'MongoDB', 'JavaScript', 'HTML5',
+      'CSS3', 'Tailwind CSS', 'Redux', 'GraphQL', 'Next.js', 'Python', 'Django', 'Flask', 'C++',
+      'C#', '.NET', 'AWS', 'Docker', 'Kubernetes', 'Redis', 'Kafka', 'Git', 'REST APIs', 'SQL'
+    ];
     techKeywords.forEach(kw => {
-      if (rawText.toLowerCase().includes(kw.toLowerCase())) {
+      const regex = new RegExp(`\\b${kw.replace('+', '\\+')}\\b`, 'i');
+      if (regex.test(rawText) && !detectedSkills.includes(kw)) {
         detectedSkills.push(kw);
       }
     });
 
     if (detectedSkills.length === 0) {
-      detectedSkills.push('JavaScript', 'Node.js', 'React', 'SQL', 'Git');
+      detectedSkills.push('Software Development', 'Problem Solving', 'Git', 'REST APIs');
     }
 
-    const calculatedScore = Math.min(95, Math.max(72, 65 + detectedSkills.length * 3));
+    const isJavaDev = detectedSkills.some(s => ['Java', 'Spring Boot', 'Spring', 'Hibernate'].includes(s));
+    const isFrontendDev = detectedSkills.some(s => ['React', 'TypeScript', 'Tailwind CSS', 'HTML5', 'Next.js'].includes(s));
+    const isPythonDev = detectedSkills.some(s => ['Python', 'Django', 'Flask'].includes(s));
+
+    const calculatedScore = Math.min(96, Math.max(70, 68 + detectedSkills.length * 3));
+
+    const strengths: string[] = [];
+    if (isJavaDev) {
+      strengths.push('✓ Strong Enterprise Java & Spring Boot backend skills');
+      strengths.push('✓ Relational database experience with MySQL/PostgreSQL');
+    } else if (isFrontendDev) {
+      strengths.push('✓ Modern React & TypeScript frontend application experience');
+      strengths.push('✓ Good UI component architecture and state management');
+    } else if (isPythonDev) {
+      strengths.push('✓ Python backend & data processing capabilities');
+      strengths.push('✓ API development experience');
+    } else {
+      strengths.push('✓ Solid foundational software development skills');
+      strengths.push('✓ Hands-on project implementation');
+    }
+    strengths.push(`✓ Versatile technical toolkit including ${detectedSkills.slice(0, 3).join(', ')}`);
+
+    const weaknesses: string[] = [
+      '△ Project descriptions could quantify measurable metric impact (e.g. latency or throughput gains)',
+      '△ Cloud deployment and CI/CD workflow section can be expanded',
+    ];
+
+    const missingSkills: Array<{ skill: string; reason: string }> = [];
+    if (isJavaDev) {
+      missingSkills.push({ skill: 'Docker', reason: 'Containerization is essential for Spring Boot microservice deployments.' });
+      missingSkills.push({ skill: 'Kafka', reason: 'Event streaming with Apache Kafka is highly valued in Java enterprise roles.' });
+      missingSkills.push({ skill: 'AWS', reason: 'Cloud hosting (EC2, S3) strengthens backend engineering profiles.' });
+    } else if (isFrontendDev) {
+      missingSkills.push({ skill: 'Node.js', reason: 'Node.js capabilities enable full-stack TypeScript engineering roles.' });
+      missingSkills.push({ skill: 'PostgreSQL', reason: 'Relational database knowledge expands frontend roles to full-stack opportunities.' });
+      missingSkills.push({ skill: 'WebSockets', reason: 'Real-time UI streaming is requested in modern web applications.' });
+    } else {
+      missingSkills.push({ skill: 'Docker', reason: 'Containerized deployment is standard across tech companies.' });
+      missingSkills.push({ skill: 'AWS', reason: 'Cloud infrastructure experience increases hiring visibility.' });
+      missingSkills.push({ skill: 'Redis', reason: 'In-memory caching is critical for high-throughput API endpoints.' });
+    }
+
+    const recommendedRoles: string[] = [];
+    if (isJavaDev) {
+      recommendedRoles.push('Java Backend Developer', 'Spring Boot Microservices Engineer', 'Systems Engineer');
+    } else if (isFrontendDev) {
+      recommendedRoles.push('Frontend Engineer', 'React Developer', 'Full Stack Web Developer');
+    } else if (isPythonDev) {
+      recommendedRoles.push('Python Developer', 'Backend Software Engineer', 'Data Engineer');
+    } else {
+      recommendedRoles.push('Software Development Engineer', 'Full Stack Developer', 'Backend Engineer');
+    }
 
     return {
       parsedData: {
-        name: lines[0] && lines[0].length < 40 ? lines[0] : 'Rahul Sharma',
-        email: emailMatch ? emailMatch[0] : 'rahul.sharma@example.com',
+        name: candidateName,
+        email: emailMatch ? emailMatch[0] : `${candidateName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
         phone: phoneMatch ? phoneMatch[0] : '+91 9876543210',
-        location: 'Bengaluru, India',
-        summary: 'Computer Science Graduate with practical REST API, Node.js, Express, and database microservice experience.',
-        education: 'B.Tech in Computer Science and Engineering',
-        degree: 'B.Tech',
-        college: 'Vellore Institute of Technology (VIT)',
+        location: rawText.includes('Mumbai') ? 'Mumbai, India' : rawText.includes('Pune') ? 'Pune, India' : rawText.includes('Hyderabad') ? 'Hyderabad, India' : 'Bengaluru, India',
+        summary: `${candidateName} is a ${recommendedRoles[0]} with technical experience in ${detectedSkills.slice(0, 5).join(', ')}.`,
+        education: rawText.includes('B.Sc') ? 'B.Sc in Computer Science' : 'B.Tech in Information Technology / Computer Science',
+        degree: rawText.includes('B.Sc') ? 'B.Sc' : 'B.Tech',
+        college: rawText.includes('Mumbai') ? 'Mumbai University' : rawText.includes('Pune') ? 'Pune University' : 'Vellore Institute of Technology (VIT)',
         graduation_year: '2024',
         skills: detectedSkills,
         experience: [
           {
-            title: 'Software Developer Intern',
+            title: recommendedRoles[0] + ' Intern',
             company: 'Tech Solutions India',
-            duration: 'Jan 2024 - Jun 2024',
-            description: 'Developed RESTful API microservices using Node.js, Express, and PostgreSQL.',
+            duration: '2023 - 2024',
+            description: `Worked on technical deliverables using ${detectedSkills.slice(0, 3).join(', ')}.`,
           },
         ],
         projects: [
           {
-            title: 'CareerPilot AI Career Agent',
-            tech_stack: ['React', 'Node.js', 'Express', 'Supabase'],
-            description: 'AI-assisted job search and application tracker platform.',
-            link: 'https://github.com/example/careerpilot',
-          },
-          {
-            title: 'E-Commerce Microservice System',
-            tech_stack: ['Node.js', 'MongoDB', 'Redis'],
-            description: 'High-concurrency order management backend API.',
+            title: `${detectedSkills[0] || 'Software'} Application System`,
+            tech_stack: detectedSkills.slice(0, 4),
+            description: `Built application leveraging ${detectedSkills.slice(0, 3).join(', ')}.`,
           },
         ],
-        certifications: ['AWS Certified Cloud Practitioner', 'Meta Front-End Developer Certificate'],
-        achievements: ['1st Runner Up - Hackathon 2024', 'Solved 300+ LeetCode problems'],
+        certifications: isJavaDev ? ['Oracle Certified Associate Java SE'] : isFrontendDev ? ['Meta Front-End Developer Certificate'] : ['AWS Cloud Practitioner'],
+        achievements: ['Solved technical hackathon challenges', 'Built production ready APIs'],
         languages: ['English', 'Hindi'],
       },
       resumeScore: calculatedScore,
-      scoreExplanation: 'Your resume demonstrates strong backend engineering skills and REST API projects, but project bullet points lack measurable metric outcomes.',
-      strengths: [
-        '✓ Strong Node.js & REST API project experience',
-        '✓ Relevant B.Tech Computer Science degree',
-        '✓ Good database fundamentals with PostgreSQL & SQL',
-      ],
-      weaknesses: [
-        '△ Project descriptions lack quantifiable metric outcomes (e.g. latency or throughput gains)',
-        '△ Experience section needs more specific technical bullet points',
-        '△ Cloud deployment technologies (AWS, Docker) should be highlighted',
-      ],
-      missingSkills: [
-        { skill: 'Docker', reason: 'Docker would strengthen your backend deployment profile and improve your fit for entry-level backend roles.' },
-        { skill: 'AWS', reason: 'Cloud infrastructure skills (EC2, S3) are highly sought after by top Indian tech employers.' },
-        { skill: 'Redis', reason: 'In-memory caching is vital for high-concurrency payment and fintech engineering teams (Razorpay, PhonePe).' },
-      ],
+      scoreExplanation: `Your resume demonstrates good technical alignment in ${detectedSkills.slice(0, 3).join(', ')}. Adding quantifiable metric outcomes will elevate your score further.`,
+      strengths,
+      weaknesses,
+      missingSkills,
       improvements: [
         {
           section: 'Projects Section',
-          original: 'Built an e-commerce website.',
-          improved: 'Built a full-stack e-commerce platform using React, Node.js, and PostgreSQL with JWT authentication.',
+          original: `Built an application using ${detectedSkills[0] || 'software'}.`,
+          improved: `Built a production-grade application using ${detectedSkills.slice(0, 3).join(', ')} with automated unit testing and 99.9% uptime.`,
           impact: 'High',
         },
         {
           section: 'Experience Section',
-          original: 'Worked on microservices.',
-          improved: 'Developed 5+ Node.js REST API microservice endpoints processing 10,000+ daily requests.',
+          original: 'Developed application features.',
+          improved: `Engineered core API endpoints in ${detectedSkills[0] || 'code'} serving thousands of users.`,
           impact: 'High',
         },
       ],
-      recommendedRoles: [
-        'Software Development Engineer I (Backend)',
-        'Full Stack Web Developer',
-        'Junior Software Engineer',
-      ],
+      recommendedRoles,
     };
   }
 

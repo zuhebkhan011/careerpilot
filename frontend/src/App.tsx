@@ -89,7 +89,7 @@ export default function App() {
     try {
       const [prof, jobList, appList] = await Promise.all([
         apiService.getProfile(profileId).catch(() => null),
-        apiService.getJobs().catch(() => []),
+        apiService.getJobs(undefined, profileId).catch(() => []),
         apiService.getApplications(profileId).catch(() => []),
       ]);
       if (prof) setResume(prof);

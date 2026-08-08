@@ -104,8 +104,10 @@ export const apiService = {
   },
 
   // 3. Job Listing & Search APIs
-  getJobs: async (filters?: any): Promise<Job[]> => {
-    const query = filters ? '?' + new URLSearchParams(filters).toString() : '';
+  getJobs: async (filters?: any, profileId?: string): Promise<Job[]> => {
+    const queryParams = new URLSearchParams(filters || {});
+    if (profileId) queryParams.set('profileId', profileId);
+    const query = queryParams.toString() ? '?' + queryParams.toString() : '';
     const res = await fetch(`${API_BASE}/jobs${query}`);
     const body = await res.json();
     if (!res.ok || !body.success) throw new Error(body.error?.message || 'Failed to fetch jobs');
