@@ -165,29 +165,27 @@ export const apiService = {
     const analysis = body.data?.analysis || body.data?.resume?.analysis_result;
     return {
       id: p?.id || fallbackProfileId,
-      fullName: p?.name || 'Rahul Sharma',
-      email: p?.email || 'rahul.sharma@example.com',
-      phone: p?.phone || '+91 9876543210',
-      location: p?.location || 'Bengaluru, India',
-      targetRole: p?.degree || 'Software Engineer',
-      yearsOfExperience: 1,
-      summary: p?.summary || `${p?.degree || 'Engineering Graduate'} from ${p?.college || 'University'} with core skills in ${p?.skills?.slice(0, 4).join(', ')}.`,
+      fullName: p?.name || '',
+      email: p?.email || '',
+      phone: p?.phone || '',
+      location: p?.location || '',
+      targetRole: (analysis?.recommendedRoles || [])[0] || '',
+      yearsOfExperience: 0,
+      summary: p?.summary || '',
       skills: p?.skills || [],
       experiences: (p?.experience || []).map((e: any, idx: number) => ({
         id: `exp-${idx}`,
-        title: e.title || 'Developer Intern',
-        company: e.company || 'Tech Company',
-        period: e.duration || '2024',
+        title: e.title || '',
+        company: e.company || '',
+        period: e.duration || '',
         description: e.description || '',
       })),
-      education: [
-        {
-          id: 'edu-1',
-          degree: p?.education || p?.degree || 'B.Tech CS',
-          institution: p?.college || 'University',
-          year: p?.graduation_year || '2024',
-        },
-      ],
+      education: p?.education ? [{
+        id: 'edu-1',
+        degree: p?.education || p?.degree || '',
+        institution: p?.college || '',
+        year: p?.graduation_year || '',
+      }] : [],
       updatedAt: p?.updated_at || new Date().toISOString(),
       rawText: text || body.data?.resume?.raw_text || '',
       college: p?.college,
@@ -199,13 +197,13 @@ export const apiService = {
       languages: p?.languages || [],
       analysisData: analysis
         ? {
-            resumeScore: analysis.resumeScore ?? 84,
-            scoreExplanation: analysis.scoreExplanation || 'Your resume demonstrates solid foundational skills, but project descriptions could include more metric impact.',
-            strengths: analysis.strengths || ['✓ Strong Node.js experience', '✓ Relevant B.Tech CS degree'],
-            weaknesses: analysis.weaknesses || ['△ Project descriptions lack measurable impact'],
-            missingSkills: analysis.missingSkills || [{ skill: 'Docker', reason: 'Essential for containerized cloud deployment.' }],
-            improvements: analysis.improvements || [],
-            recommendedRoles: analysis.recommendedRoles || ['Software Development Engineer I (Backend)', 'Full Stack Developer'],
+            resumeScore: typeof analysis.resumeScore === 'number' ? analysis.resumeScore : 0,
+            scoreExplanation: analysis.scoreExplanation || '',
+            strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
+            weaknesses: Array.isArray(analysis.weaknesses) ? analysis.weaknesses : [],
+            missingSkills: Array.isArray(analysis.missingSkills) ? analysis.missingSkills : [],
+            improvements: Array.isArray(analysis.improvements) ? analysis.improvements : [],
+            recommendedRoles: Array.isArray(analysis.recommendedRoles) ? analysis.recommendedRoles : [],
           }
         : undefined,
     };
@@ -233,7 +231,13 @@ export const apiService = {
       body: formData,
     });
     const body = await res.json();
-    if (!res.ok || !body.success) throw new Error(body.error?.message || 'Resume upload failed');
+    if (!res.ok || !body.success) {
+      const errCode = body.error?.code || 'UPLOAD_FAILED';
+      const errMsg = body.error?.message || 'Resume upload failed';
+      const err: any = new Error(errMsg);
+      err.code = errCode;
+      throw err;
+    }
     return apiService._mapProfileResponse(body, profileId);
   },
 

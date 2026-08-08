@@ -48,16 +48,29 @@ export function ResumeView({ resume, onSaveResume, onFindJobsForMe }: Props) {
       formData.append('profileId', resume.id);
       const result = await apiService.uploadResumePDF(formData);
       await stepTimer;
-      setAnalysisStep(5); // Preparing Recommendations
+      setAnalysisStep(5);
 
       if (result) {
         onSaveResume({ ...resume, ...result, fileName: file.name, fileSize: `${(file.size / 1024).toFixed(0)} KB` });
         setView('analysis');
       } else {
-        setError('Your resume was uploaded, but AI analysis could not be completed.');
+        setError('Your resume was uploaded, but AI analysis could not be completed. Click Retry Analysis.');
       }
     } catch (e: any) {
-      setError('CareerPilot couldn\'t read text from this PDF. Please ensure it is a text-based PDF or paste resume text below.');
+      // Show specific error based on backend error code
+      const code = e?.code || '';
+      if (code === 'PDF_EXTRACTION_ERROR') {
+        setError(
+          e.message ||
+          'CareerPilot could not extract readable text from this PDF. Please ensure the PDF contains selectable text (not a scanned image), or paste your resume text directly below.'
+        );
+      } else if (code === 'AI_ANALYSIS_ERROR') {
+        setError('AI analysis is temporarily unavailable. Your resume was uploaded. Click "Retry Analysis" to try again.');
+      } else if (code === 'DATABASE_ERROR') {
+        setError('Resume analysis could not be saved. Please try again.');
+      } else {
+        setError(e.message || 'Resume upload failed. Please try again or paste your resume text below.');
+      }
     } finally {
       setUploading(false);
       setAnalyzing(false);
