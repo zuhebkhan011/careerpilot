@@ -1,6 +1,0 @@
-{
-  "name": "CareerPulse AI",
-  "description": "Mobile-first career platform with AI job matching, resume analysis, application tracker, and AI career coach.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
