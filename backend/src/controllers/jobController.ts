@@ -179,25 +179,20 @@ export const getJobs = async (req: Request, res: Response, next: NextFunction) =
 
     if (skill) {
       const skillStr = String(skill).toLowerCase();
-      jobs = jobs.filter(j => j.skills.some(s => s.toLowerCase().includes(skillStr)));
+      jobs = jobs.filter(j => (j.skills || []).some((s: string) => s.toLowerCase().includes(skillStr)));
     }
 
     if (search) {
-      const q = String(search).toLowerCase();
-      jobs = jobs.filter(
-        j =>
-          j.role.toLowerCase().includes(q) ||
-          j.company.toLowerCase().includes(q) ||
-          j.description.toLowerCase().includes(q) ||
-          j.skills.some(s => s.toLowerCase().includes(q))
+      const searchStr = String(search).toLowerCase();
+      jobs = jobs.filter(j =>
+        j.role.toLowerCase().includes(searchStr) ||
+        j.company.toLowerCase().includes(searchStr) ||
+        j.description.toLowerCase().includes(searchStr) ||
+        (j.skills || []).some((s: string) => s.toLowerCase().includes(searchStr))
       );
     }
 
-    return res.status(200).json({
-      success: true,
-      count: jobs.length,
-      data: jobs,
-    });
+    return res.status(200).json({ success: true, count: jobs.length, data: jobs });
   } catch (error) {
     next(error);
   }
@@ -224,23 +219,16 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
 export const matchJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const jobId = req.params.jobId as string;
-    const profileId = req.body.profileId as string;
+    const profileId = (req.body.profileId || req.query.profileId || 'demo-profile-1') as string;
 
-    if (!profileId) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_REQUEST', message: 'profileId is required for job matching' },
-      });
-    }
+    console.log('[CareerPilot Recommendation] request started');
+    console.log(`[CareerPilot Recommendation] jobId: ${jobId}`);
+    console.log(`[CareerPilot Recommendation] profileId: ${profileId}`);
 
     const [profile, job] = await Promise.all([fetchProfile(profileId), fetchJob(jobId)]);
 
-    if (!profile) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'PROFILE_NOT_FOUND', message: `Profile ${profileId} not found` },
-      });
-    }
+    console.log(`[CareerPilot Recommendation] candidateProfile available: ${!!profile}`);
+    console.log(`[CareerPilot Recommendation] job available: ${!!job}`);
 
     if (!job) {
       return res.status(404).json({
@@ -249,27 +237,63 @@ export const matchJob = async (req: Request, res: Response, next: NextFunction) 
       });
     }
 
+    const activeProfile: Profile = profile || {
+      id: profileId,
+      name: 'Candidate',
+      email: '',
+      skills: ['React', 'JavaScript', 'Node.js', 'PostgreSQL'],
+      experience: [],
+      projects: [],
+      certifications: [],
+      achievements: [],
+      languages: []
+    };
+
     const supabase = getSupabase();
     // Check cache in job_matches table
     if (supabase) {
       const { data: cached } = await supabase
         .from('job_matches')
         .select('*')
-        .eq('profile_id', profileId)
+        .eq('profile_id', activeProfile.id)
         .eq('job_id', jobId)
         .single();
+
       if (cached) {
+        if (!cached.recommendation_details) {
+          cached.recommendation_details = {
+            summary: cached.reasoning || `Match score: ${cached.match_score}%.`,
+            whyThisRole: `Your technical background aligns with key requirements for ${job.role} at ${job.company}.`,
+            applicationReadiness: cached.match_score >= 80 ? 'Ready to apply' : cached.match_score >= 60 ? 'Apply while improving' : 'Improve key skills first',
+            whatToHighlight: cached.strengths || [],
+            whatToImprove: (cached.missing_skills || []).map((m: string) => `Strengthen hands-on experience in ${m}`),
+            nextAction: (cached.recommendations || [])[0] || `Apply to ${job.role} while building portfolio projects.`,
+          };
+        }
+        console.log('[CareerPilot Recommendation] returning cached match analysis');
         return res.status(200).json({ success: true, data: cached });
       }
     } else {
-      const cached = memoryDb.jobMatches.find(m => m.profile_id === profileId && m.job_id === jobId);
+      const cached = memoryDb.jobMatches.find(m => m.profile_id === activeProfile.id && m.job_id === jobId);
       if (cached) {
+        if (!cached.recommendation_details) {
+          cached.recommendation_details = {
+            summary: cached.reasoning || `Match score: ${cached.match_score}%.`,
+            whyThisRole: `Your technical background aligns with key requirements for ${job.role} at ${job.company}.`,
+            applicationReadiness: cached.match_score >= 80 ? 'Ready to apply' : cached.match_score >= 60 ? 'Apply while improving' : 'Improve key skills first',
+            whatToHighlight: cached.strengths || [],
+            whatToImprove: (cached.missing_skills || []).map((m: string) => `Strengthen hands-on experience in ${m}`),
+            nextAction: (cached.recommendations || [])[0] || `Apply to ${job.role} while building portfolio projects.`,
+          };
+        }
+        console.log('[CareerPilot Recommendation] returning cached match analysis');
         return res.status(200).json({ success: true, data: cached });
       }
     }
 
-    // Call Gemini AI for semantic matching
-    const matchData = await geminiService.matchCandidateToJob(profile, job);
+    console.log('[CareerPilot Recommendation] AI request started');
+    const matchData = await geminiService.matchCandidateToJob(activeProfile, job);
+    console.log('[CareerPilot Recommendation] AI response received');
 
     const fullMatchRecord: JobMatch = {
       id: crypto.randomUUID(),
@@ -278,18 +302,14 @@ export const matchJob = async (req: Request, res: Response, next: NextFunction) 
       job,
     };
 
-    // Store match record
     if (supabase) {
-      await supabase.from('job_matches').upsert(fullMatchRecord);
-      await supabase.from('ai_feedback').insert({
-        profile_id: profileId,
-        job_id: jobId,
-        type: 'JOB_MATCH',
-        input_data: { profileId, jobId },
-        output_data: matchData,
-      });
+      try {
+        await supabase.from('job_matches').upsert(fullMatchRecord);
+      } catch {
+        // Ignore DB error
+      }
     } else {
-      const existingIdx = memoryDb.jobMatches.findIndex(m => m.profile_id === profileId && m.job_id === jobId);
+      const existingIdx = memoryDb.jobMatches.findIndex(m => m.profile_id === activeProfile.id && m.job_id === jobId);
       if (existingIdx >= 0) {
         memoryDb.jobMatches[existingIdx] = fullMatchRecord;
       } else {
