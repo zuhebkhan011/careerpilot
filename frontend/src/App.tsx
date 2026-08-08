@@ -15,6 +15,7 @@ import { JobMatchModal } from './components/JobMatchModal';
 import { CoverLetterModal } from './components/CoverLetterModal';
 import { ProUpgradeModal } from './components/ProUpgradeModal';
 import { NewApplicationModal } from './components/NewApplicationModal';
+import { App as CapApp } from '@capacitor/app';
 
 const EMPTY_PROFILE: ResumeProfile = {
   id: 'demo-profile-1',
@@ -51,6 +52,27 @@ export default function App() {
   const [coverLetterJob, setCoverLetterJob] = useState<Job | null>(null);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isNewAppModalOpen, setIsNewAppModalOpen] = useState(false);
+
+  // Capacitor Android Back Button handler
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).Capacitor) {
+      const listener = CapApp.addListener('backButton', () => {
+        if (matchJob || coverLetterJob || isProModalOpen || isNewAppModalOpen) {
+          setMatchJob(null);
+          setCoverLetterJob(null);
+          setIsProModalOpen(false);
+          setIsNewAppModalOpen(false);
+        } else if (activeTab !== 'dashboard') {
+          setActiveTab('dashboard');
+        } else {
+          CapApp.minimizeApp();
+        }
+      });
+      return () => {
+        listener.then((h) => h.remove());
+      };
+    }
+  }, [matchJob, coverLetterJob, isProModalOpen, isNewAppModalOpen, activeTab]);
 
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -138,9 +160,10 @@ export default function App() {
   };
 
   const handleUpdateApplication = async (updatedApp: Application) => {
+    const profileId = resume?.id || sessionStorage.getItem('cp_profile_id') || 'demo-profile-1';
     try {
       await apiService.updateApplicationStatus(updatedApp.id, updatedApp.status, updatedApp.notes);
-      const updatedApps = await apiService.getApplications(resume.id);
+      const updatedApps = await apiService.getApplications(profileId);
       setApplications(updatedApps);
       addToast('success', 'Status Updated', `Changed to '${updatedApp.status}'`);
     } catch (e: any) {
@@ -149,9 +172,10 @@ export default function App() {
   };
 
   const handleDeleteApplication = async (appId: string) => {
+    const profileId = resume?.id || sessionStorage.getItem('cp_profile_id') || 'demo-profile-1';
     try {
       await apiService.deleteApplication(appId);
-      const updatedApps = await apiService.getApplications(resume.id);
+      const updatedApps = await apiService.getApplications(profileId);
       setApplications(updatedApps);
       addToast('info', 'Removed', 'Application deleted.');
     } catch (e: any) {

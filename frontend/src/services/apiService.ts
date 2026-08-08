@@ -1,6 +1,17 @@
 import { Job, Application, ResumeProfile, MatchAnalysis, ApplicationStatus } from '../types';
 
-const API_BASE = '/api';
+const getApiBase = () => {
+  const customUrl = (import.meta as any).env?.VITE_API_URL;
+  if (customUrl) return customUrl;
+
+  if (typeof window !== 'undefined' && ((window as any).Capacitor || window.location.protocol === 'http:' && window.location.hostname === 'localhost' && window.location.port === '')) {
+    // When running inside Capacitor Android app
+    return 'http://10.0.2.2:5000/api';
+  }
+  return '/api';
+};
+
+const API_BASE = getApiBase();
 
 // Status mapper between Backend SQL Enums and Frontend UI labels
 export const statusToUI = (status: string): ApplicationStatus => {
