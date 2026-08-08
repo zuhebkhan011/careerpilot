@@ -275,27 +275,35 @@ Instructions:
   }
 
   /**
-   * Resume Review & Audit
+   * Personalized AI Career Coach Advice
    */
   async reviewResume(profile: Partial<Profile>, rawText?: string): Promise<any> {
     const prompt = `
-Analyze this resume profile and provide detailed actionable feedback to improve candidate hiring chances in the tech market.
+You are an expert AI Career Architect and Executive Tech Coach.
+Provide highly personalized, actionable career guidance based STRICTLY on this candidate's profile data.
 
-Profile Data:
+CANDIDATE DATA:
 ${JSON.stringify(profile, null, 2)}
-${rawText ? `Raw Resume Text snippet: ${rawText.substring(0, 1000)}` : ''}
 
-Return JSON with:
+Return ONLY a valid JSON object matching this schema:
 {
-  "resumeStrength": 82,
-  "weakSections": ["Projects section lacks quantifiable metric results"],
-  "missingSkills": ["Docker", "Git Workflow", "CI/CD"],
-  "suggestedImprovements": [
-    "Add metrics to your experience e.g. 'Improved API response time by 30%'",
-    "Include live deployment URLs for your projects"
+  "topRole": "Top Target Role Name e.g. Java Backend Engineer or Frontend Engineer",
+  "summary": "2-3 sentence personalized evaluation referencing candidate's specific skills, degree, and projects.",
+  "skillGaps": ["Skill 1 missing for target role", "Skill 2 missing"],
+  "skillsToStrengthen": [
+    { "skill": "SkillName", "priority": "High" },
+    { "skill": "SkillName", "priority": "Medium" }
   ],
-  "roleSpecificSuggestions": [
-    "For Backend roles, highlight database schema design & RESTful API security."
+  "recommendation": "Core strategic priority recommendation e.g. Build and deploy a containerized Spring Boot microservice.",
+  "actionDetail": "Detailed explanation of why this recommendation elevates the candidate's score for their target role.",
+  "actionPlan": {
+    "next7Days": ["Action 1", "Action 2"],
+    "next30Days": ["Action 1", "Action 2"],
+    "next90Days": ["Action 1", "Action 2"]
+  },
+  "interviewQuestions": [
+    { "category": "Technical", "question": "Domain-specific technical question tailored to candidate's stack" },
+    { "category": "Behavioral", "question": "Behavioral question relevant to engineering projects" }
   ]
 }
 `;
@@ -313,46 +321,11 @@ Return JSON with:
     }
   }
 
-  /**
-   * Career Guidance Roadmap
-   */
-  async generateCareerGuidance(profile: Profile): Promise<any> {
-    const prompt = `
-Provide career guidance and a 3-step growth roadmap for ${profile.name || 'a candidate'} with skills: ${profile.skills?.join(', ') || 'Software Development'}.
-
-Return JSON:
-{
-  "targetRoles": ["Full Stack Engineer", "Backend Developer", "Cloud Engineer"],
-  "careerStage": "Early Career / Fresher",
-  "skillGaps": ["Containerization (Docker)", "System Design Basics"],
-  "actionableRoadmap": [
-    { "phase": "Month 1", "focus": "Master core engineering concepts & API patterns" },
-    { "phase": "Month 2", "focus": "Build & deploy full stack app with database integration" },
-    { "phase": "Month 3", "focus": "Prepare System Design & Open Source Contributions" }
-  ],
-  "marketInsights": "Active hiring across tech hubs in India for developers with core project experience."
-}
-`;
-
-    const text = await this.generateText(prompt);
-    if (!text) {
-      return this.fallbackCareerGuidance(profile);
-    }
-
-    try {
-      const cleaned = this.cleanJsonResponse(text);
-      return JSON.parse(cleaned);
-    } catch {
-      return this.fallbackCareerGuidance(profile);
-    }
-  }
-
-  // --- Source-Based Fallback Parser (used if API key is unconfigured/offline) ---
+  // --- Source-Based Fallback Parser ---
 
   private fallbackResumeAnalysis(rawText: string): ResumeAnalysisResult {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
 
-    // 1. Candidate Name
     let candidateName: string | null = null;
     if (lines.length > 0) {
       const firstLine = lines[0].replace(/^(resume|curriculum vitae|cv)\s*/i, '').trim();
@@ -361,15 +334,12 @@ Return JSON:
       }
     }
 
-    // 2. Email
     const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     const candidateEmail = emailMatch ? emailMatch[0] : null;
 
-    // 3. Phone (Normalized Indian format)
     const phoneMatch = rawText.match(/(\+91[\-\s]?)?[6-9]\d{9}/);
     const candidatePhone = phoneMatch ? phoneMatch[0] : null;
 
-    // 4. Candidate Location (Source-based ONLY — check header lines)
     let candidateLocation: string | null = null;
     const headerSnippet = lines.slice(0, 8).join(' ');
     const knownCities = [
@@ -386,7 +356,6 @@ Return JSON:
       }
     }
 
-    // 5. Education (Indian degree formats)
     let candidateDegree: string | null = null;
     let candidateCollege: string | null = null;
     let candidateYear: string | null = null;
@@ -401,13 +370,11 @@ Return JSON:
       }
     }
 
-    // Extract college/university line
     const collegeLine = lines.find(l => /university|college|institute|iit|nit|vit|bits|aktu|gtu/i.test(l));
     if (collegeLine) {
       candidateCollege = collegeLine;
     }
 
-    // Extract graduation year
     const yearMatch = rawText.match(/\b(20[0-2][0-9])\b/);
     if (yearMatch) {
       candidateYear = yearMatch[1];
@@ -417,7 +384,6 @@ Return JSON:
       candidateEducation = `${candidateDegree || 'Degree'}${candidateCollege ? ' from ' + candidateCollege : ''}${candidateYear ? ' (' + candidateYear + ')' : ''}`;
     }
 
-    // 6. Dynamic skill detection from raw text
     const detectedSkills: string[] = [];
     const techKeywords = [
       'Java', 'Spring Boot', 'Spring', 'MySQL', 'Hibernate', 'Microservices', 'Maven', 'JUnit',
@@ -564,29 +530,61 @@ ${profile.name || 'Candidate'}`;
   }
 
   private fallbackResumeReview(profile: Partial<Profile>): any {
+    const skills = profile.skills || [];
+    const isJava = skills.some(s => /\b(java|spring|hibernate|maven)\b/i.test(s) && !/javascript/i.test(s));
+    const isFrontend = skills.some(s => /\b(react|typescript|next|vue|angular|tailwind|html|css)\b/i.test(s));
+
+    const topRole = isJava ? 'Java Backend Developer' : isFrontend ? 'Frontend Developer' : 'Software Engineer';
+    const missing = isJava
+      ? ['Docker', 'Apache Kafka', 'AWS EC2']
+      : isFrontend
+      ? ['Node.js', 'PostgreSQL', 'WebSockets']
+      : ['Docker', 'AWS', 'Redis'];
+
     return {
-      resumeStrength: 82,
-      weakSections: [
-        'Project descriptions should emphasize measurable outcomes (e.g. reduced load times by 25%).',
-      ],
-      missingSkills: ['Docker', 'AWS Deployment', 'CI/CD Pipelines'],
-      suggestedImprovements: [
-        'Add live URLs or GitHub repository links to your featured projects.',
-        'Group technical skills cleanly into Languages, Frameworks, Databases, and Tools.',
-      ],
-      roleSpecificSuggestions: [
-        'For Indian tech companies (Razorpay, TCS, Zoho, Zerodha), highlight database optimization and API performance.',
-      ],
+      topRole,
+      summary: `Candidate demonstrates solid technical foundation in ${skills.slice(0, 4).join(', ') || 'software development'}. Adding cloud deployment and system metrics will strengthen candidacy for top Indian tech companies.`,
+      skillGaps: missing,
+      skillsToStrengthen: missing.map(m => ({ skill: m, priority: 'High' as const })),
+      recommendation: isJava
+        ? 'Build and containerize a Spring Boot REST API microservice using Docker and PostgreSQL.'
+        : isFrontend
+        ? 'Build a full-stack TypeScript application with React, Node.js and PostgreSQL.'
+        : 'Build and deploy a full-stack web application with cloud deployment.',
+      actionDetail: `Addressing these skill gaps improves profile match score for ${topRole} roles by up to 20%.`,
+      actionPlan: {
+        next7Days: [
+          'Quantify project bullet points with latency or throughput metrics',
+          `Revise core ${skills[0] || 'programming'} concepts`,
+        ],
+        next30Days: [
+          `Master ${missing[0] || 'Docker'} fundamentals`,
+          `Build a production-style ${topRole} project`,
+        ],
+        next90Days: [
+          `Prepare for ${topRole} technical & coding interviews`,
+          'Apply to targeted high-compatibility roles on CareerPilot',
+        ],
+      },
+      interviewQuestions: isJava
+        ? [
+            { category: 'Technical', question: 'How does Spring Boot manage dependency injection and auto-configuration?' },
+            { category: 'Behavioral', question: 'Describe how you optimized database queries or handled microservice failures.' }
+          ]
+        : [
+            { category: 'Technical', question: 'Explain React Virtual DOM reconciliation and key optimization techniques in Next.js.' },
+            { category: 'Behavioral', question: 'Describe how you structured state management in a complex React project.' }
+          ],
     };
   }
 
   private fallbackCareerGuidance(profile: Profile): any {
     return {
-      targetRoles: ['Full Stack Engineer', 'Backend Developer', 'Software Engineer'],
+      targetRoles: profile.preferred_roles || ['Full Stack Engineer', 'Backend Developer', 'Software Engineer'],
       careerStage: 'Early Career / Fresher',
       skillGaps: ['Docker', 'AWS / Cloud Deployment', 'System Design'],
       actionableRoadmap: [
-        { phase: 'Month 1', focus: 'Strengthen Node.js/Java microservices and database query optimization.' },
+        { phase: 'Month 1', focus: 'Strengthen core skills and database query optimization.' },
         { phase: 'Month 2', focus: 'Build a containerized project with Docker and deploy to cloud.' },
         { phase: 'Month 3', focus: 'Practice coding interviews and system design fundamentals.' },
       ],

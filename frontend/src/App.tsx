@@ -108,23 +108,32 @@ export default function App() {
     addToast('success', 'Welcome back!', 'Successfully signed in to CareerPilot.');
   };
 
-  const handleApplyJob = async (job: Job) => {
+  const handleTrackJob = async (job: Job) => {
+    const profileId = resume?.id || sessionStorage.getItem('cp_profile_id') || 'demo-profile-1';
     try {
       await apiService.saveApplication({
-        profileId: resume.id,
+        profileId,
         jobId: job.id,
-        status: 'Applied',
-        notes: `Applied from UI. Role: ${job.role} at ${job.company}`,
+        status: 'Saved',
+        notes: `Tracked from UI. Role: ${job.role} at ${job.company}`,
       });
-      const updatedApps = await apiService.getApplications(resume.id);
+      const updatedApps = await apiService.getApplications(profileId);
       setApplications(updatedApps);
-      addToast('success', 'Application Saved!', `${job.role} at ${job.company} added to tracker.`);
+      addToast('success', 'Added to Tracker!', `${job.role} at ${job.company} saved as Interested.`);
     } catch (e: any) {
-      if (e.message?.includes('already exists')) {
-        addToast('info', 'Already Tracked', `Application for ${job.role} already exists.`);
+      if (e.message?.includes('already exists') || e.message?.includes('DUPLICATE')) {
+        addToast('info', 'Already Tracked', `Application for ${job.role} is already in your tracker.`);
       } else {
-        addToast('error', 'Save Failed', e.message);
+        addToast('error', 'Track Failed', e.message);
       }
+    }
+  };
+
+  const handleApplyJob = async (job: Job) => {
+    if (job.sourceUrl) {
+      window.open(job.sourceUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      await handleTrackJob(job);
     }
   };
 
@@ -231,6 +240,7 @@ export default function App() {
                   resume={resume || EMPTY_PROFILE}
                   setActiveTab={setActiveTab}
                   onSelectJob={(j) => setMatchJob(j)}
+                  onTrackJob={handleTrackJob}
                   onApplyJob={handleApplyJob}
                   onOpenProModal={() => setIsProModalOpen(true)}
                 />
@@ -240,6 +250,7 @@ export default function App() {
                   jobs={jobs}
                   applications={applications}
                   onSelectJob={(j) => setMatchJob(j)}
+                  onTrackJob={handleTrackJob}
                   onApplyJob={handleApplyJob}
                   hasResume={!!resume?.skills?.length || !!resume?.rawText}
                 />
@@ -279,6 +290,7 @@ export default function App() {
       <JobMatchModal
         job={matchJob}
         onClose={() => setMatchJob(null)}
+        onTrack={handleTrackJob}
         onApply={handleApplyJob}
       />
       <CoverLetterModal

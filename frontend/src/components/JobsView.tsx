@@ -5,6 +5,7 @@ interface Props {
   jobs: Job[];
   applications: Application[];
   onSelectJob: (job: Job) => void;
+  onTrackJob: (job: Job) => void;
   onApplyJob: (job: Job) => void;
   hasResume?: boolean;
 }
@@ -22,7 +23,7 @@ function getCompanyInitials(company: string): string {
     .slice(0, 3);
 }
 
-export function JobsView({ jobs, applications, onSelectJob, onApplyJob, hasResume }: Props) {
+export function JobsView({ jobs, applications, onSelectJob, onTrackJob, onApplyJob, hasResume }: Props) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('All');
   const [workModeFilter, setWorkModeFilter] = useState<string>('All');
@@ -311,6 +312,7 @@ export function JobsView({ jobs, applications, onSelectJob, onApplyJob, hasResum
               job={job}
               isApplied={appliedJobIds.has(job.id)}
               onViewMatch={onSelectJob}
+              onTrack={onTrackJob}
               onApply={onApplyJob}
             />
           ))
@@ -333,11 +335,13 @@ function FindJobCard({
   job,
   isApplied,
   onViewMatch,
+  onTrack,
   onApply,
 }: {
   job: Job;
   isApplied: boolean;
   onViewMatch: (j: Job) => void;
+  onTrack: (j: Job) => void;
   onApply: (j: Job) => void;
 }) {
   const [hovered, setHovered] = React.useState(false);
@@ -469,59 +473,56 @@ function FindJobCard({
         </div>
       )}
 
-      {/* Action */}
-      <div style={{ marginTop: 'auto', display: 'flex', gap: 10 }}>
+      {/* Action Buttons */}
+      <div style={{ marginTop: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button
           className="btn-primary"
           onClick={() => onViewMatch(job)}
           style={{
             flex: 1,
-            padding: '10px 16px',
+            padding: '9px 12px',
             borderRadius: 8,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 600,
           }}
         >
           View Match
         </button>
 
-        {job.source === 'linkedin' && job.sourceUrl ? (
-          <a
-            href={job.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+        <button
+          onClick={() => onTrack(job)}
+          style={{
+            padding: '9px 12px',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor: isApplied ? 'var(--color-surface-container-high)' : 'var(--color-surface-container-low)',
+            color: 'var(--color-on-surface)',
+            border: '1px solid var(--color-outline-variant)',
+            cursor: 'pointer',
+          }}
+        >
+          {isApplied ? 'Tracked' : 'Track Application'}
+        </button>
+
+        {job.sourceUrl && (
+          <button
+            onClick={() => onApply(job)}
             style={{
-              padding: '10px 14px',
+              padding: '9px 12px',
               borderRadius: 8,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               backgroundColor: '#0a66c2',
               color: '#ffffff',
-              textDecoration: 'none',
+              border: 'none',
+              cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4,
             }}
           >
-            LinkedIn
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>open_in_new</span>
-          </a>
-        ) : (
-          <button
-            onClick={() => onApply(job)}
-            disabled={isApplied}
-            style={{
-              padding: '10px 16px',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              backgroundColor: isApplied ? 'var(--color-surface-container-high)' : 'var(--color-accent-saffron)',
-              color: isApplied ? 'var(--color-on-surface-variant)' : '#000000',
-              border: 'none',
-              cursor: isApplied ? 'default' : 'pointer',
-            }}
-          >
-            {isApplied ? 'Applied' : 'Apply'}
+            Apply <span className="material-symbols-outlined" style={{ fontSize: 14 }}>open_in_new</span>
           </button>
         )}
       </div>

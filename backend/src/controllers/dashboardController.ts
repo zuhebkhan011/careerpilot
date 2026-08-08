@@ -24,14 +24,22 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       matches = matchesRes.data || [];
       resumes = resumesRes.data || [];
       jobs = jobsRes.data || [];
-    } else {
+    }
+
+    if (applications.length === 0) {
       applications = memoryDb.applications
         .filter(a => a.profile_id === profileId)
         .map(a => ({ ...a, job: memoryDb.jobs.find(j => j.id === a.job_id) }));
+    }
+    if (matches.length === 0) {
       matches = memoryDb.jobMatches
         .filter(m => m.profile_id === profileId)
         .map(m => ({ ...m, job: memoryDb.jobs.find(j => j.id === m.job_id) }));
+    }
+    if (resumes.length === 0) {
       resumes = memoryDb.resumes.filter(r => r.profile_id === profileId);
+    }
+    if (jobs.length === 0) {
       jobs = memoryDb.jobs.slice(0, 10);
     }
 
@@ -40,8 +48,8 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
     const selected = applications.filter(a => a.status === 'SELECTED').length;
     const rejected = applications.filter(a => a.status === 'REJECTED').length;
 
-    const highestMatch = matches.length > 0 ? Math.max(...matches.map(m => m.match_score)) : 91;
-    const latestResumeScore = resumes.length > 0 ? resumes[0].resume_score : 85;
+    const highestMatch = matches.length > 0 ? Math.max(...matches.map(m => m.match_score)) : 0;
+    const latestResumeScore = resumes.length > 0 ? (resumes[0].resume_score || resumes[0].analysis_result?.resumeScore || 0) : 0;
 
     // Calculate top recommended jobs
     const topRecommendedJobs = matches.length > 0

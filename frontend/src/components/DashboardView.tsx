@@ -8,6 +8,7 @@ interface Props {
   resume: ResumeProfile;
   setActiveTab: (tab: string) => void;
   onSelectJob: (job: Job) => void;
+  onTrackJob?: (job: Job) => void;
   onApplyJob: (job: Job) => void;
   onOpenProModal: () => void;
 }
@@ -46,12 +47,14 @@ export function DashboardView({
   onApplyJob,
   onOpenProModal,
 }: Props) {
+  const canonicalScore = resume?.analysisData?.resumeScore ?? 0;
+
   const [stats, setStats] = useState<DashboardStats>({
     totalJobsMatched: jobs.length,
     topMatch: 0,
     totalApplications: applications.length,
     interviews: 0,
-    resumeScore: 84,
+    resumeScore: canonicalScore,
   });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,7 +69,7 @@ export function DashboardView({
           topMatch: data.topMatch ?? 0,
           totalApplications: data.totalApplications ?? applications.length,
           interviews: data.interviews ?? 0,
-          resumeScore: data.resumeScore ?? 84,
+          resumeScore: canonicalScore || data.resumeScore || 0,
           topRecommendedJobs: data.topRecommendedJobs ?? [],
         });
       } catch {
@@ -77,14 +80,14 @@ export function DashboardView({
           interviews: applications.filter((a) =>
             ['Interviewing', 'INTERVIEW', 'Interview'].includes(a.status)
           ).length,
-          resumeScore: 84,
+          resumeScore: canonicalScore,
         });
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
-  }, [resume.id, jobs.length, applications.length]);
+  }, [resume?.id, resume?.analysisData?.resumeScore, jobs.length, applications.length]);
 
   const topJobs = jobs.slice(0, 3);
   const firstName = resume.fullName?.split(' ')[0] || 'there';

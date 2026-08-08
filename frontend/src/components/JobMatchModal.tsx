@@ -6,6 +6,7 @@ import { apiService } from '../services/apiService';
 interface Props {
   job: Job | null;
   onClose: () => void;
+  onTrack: (job: Job) => void;
   onApply: (job: Job) => void;
 }
 
@@ -70,10 +71,10 @@ function CircleScore({ score }: { score: number }) {
   );
 }
 
-export function JobMatchModal({ job, onClose, onApply }: Props) {
+export function JobMatchModal({ job, onClose, onTrack, onApply }: Props) {
   const [match, setMatch] = useState<MatchAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
-  const [applying, setApplying] = useState(false);
+  const [tracking, setTracking] = useState(false);
 
   // Body scroll lock & Escape key listener
   useEffect(() => {
@@ -123,13 +124,12 @@ export function JobMatchModal({ job, onClose, onApply }: Props) {
   const initials = getCompanyInitials(job.company);
   const score = match?.matchScore ?? job.matchScore ?? 0;
 
-  const handleApply = async () => {
-    setApplying(true);
+  const handleTrack = async () => {
+    setTracking(true);
     try {
-      await onApply(job);
-      onClose();
+      await onTrack(job);
     } finally {
-      setApplying(false);
+      setTracking(false);
     }
   };
 
@@ -476,20 +476,42 @@ export function JobMatchModal({ job, onClose, onApply }: Props) {
           >
             Close
           </button>
+
           <button
             className="btn-primary"
-            disabled={applying}
-            onClick={handleApply}
+            disabled={tracking}
+            onClick={handleTrack}
             style={{
-              padding: '10px 24px',
+              padding: '10px 20px',
               borderRadius: 8,
               fontSize: 15,
               fontWeight: 600,
-              opacity: applying ? 0.7 : 1,
+              opacity: tracking ? 0.7 : 1,
             }}
           >
-            {applying ? 'Saving...' : 'Track Application'}
+            {tracking ? 'Saving...' : 'Track Application'}
           </button>
+
+          {job.sourceUrl && (
+            <button
+              onClick={() => onApply(job)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 600,
+                backgroundColor: 'var(--color-accent-saffron)',
+                color: '#000000',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              Apply <span className="material-symbols-outlined" style={{ fontSize: 16 }}>open_in_new</span>
+            </button>
+          )}
         </footer>
       </div>
 
