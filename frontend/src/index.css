@@ -1,0 +1,285 @@
+/* =============================================================
+   CareerPilot — Stitch Design System CSS
+   Source of truth: stitch_careerpilot_design_system/DESIGN.md
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+/* --- CSS Custom Properties (Design Tokens) --- */
+:root {
+  /* Colors */
+  --color-background: #fdf8f8;
+  --color-surface: #fdf8f8;
+  --color-surface-bright: #fdf8f8;
+  --color-surface-dim: #ddd9d8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f7f3f2;
+  --color-surface-container: #f1edec;
+  --color-surface-container-high: #ebe7e6;
+  --color-surface-container-highest: #e5e2e1;
+  --color-surface-variant: #e5e2e1;
+
+  --color-on-surface: #1c1b1b;
+  --color-on-surface-variant: #444748;
+  --color-on-background: #1c1b1b;
+
+  --color-primary: #000000;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #1c1b1b;
+  --color-on-primary-container: #858383;
+  --color-primary-fixed: #e5e2e1;
+  --color-primary-fixed-dim: #c8c6c5;
+  --color-inverse-primary: #c8c6c5;
+
+  --color-secondary: #465f88;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #b6d0ff;
+  --color-on-secondary-container: #3f5881;
+  --color-secondary-fixed: #d6e3ff;
+  --color-secondary-fixed-dim: #aec7f6;
+  --color-on-secondary-fixed: #001b3d;
+  --color-on-secondary-fixed-variant: #2d476f;
+
+  --color-tertiary: #000000;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #2f1400;
+  --color-on-tertiary-container: #bb7336;
+  --color-tertiary-fixed: #ffdcc4;
+  --color-tertiary-fixed-dim: #ffb780;
+  --color-on-tertiary-fixed: #2f1400;
+  --color-on-tertiary-fixed-variant: #6f3800;
+
+  --color-outline: #747878;
+  --color-outline-variant: #c4c7c7;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-inverse-surface: #313030;
+  --color-inverse-on-surface: #f4f0ef;
+
+  --color-surface-tint: #5f5e5e;
+
+  /* Accent colors (Stitch branding) */
+  --color-accent-navy: #002147;
+  --color-accent-saffron: #F4A261;
+  --color-accent-muted-saffron: #FDEEDF;
+
+  /* Spacing */
+  --space-base: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-gutter: 16px;
+  --space-margin-mobile: 16px;
+  --space-margin-desktop: 40px;
+
+  /* Border radius */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+}
+
+/* --- Global Reset & Base --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Material Symbols utility --- */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* --- Typography Scale --- */
+.text-display-lg {
+  font-family: 'Manrope', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 56px;
+  letter-spacing: -0.02em;
+}
+
+.text-headline-lg {
+  font-family: 'Manrope', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+  letter-spacing: -0.01em;
+}
+
+.text-headline-md {
+  font-family: 'Manrope', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
+.text-title-lg {
+  font-family: 'Manrope', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.text-title-md {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.text-body-lg {
+  font-family: 'Manrope', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+.text-body-md {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.text-body-sm {
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.text-label-md {
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+}
+
+.text-numeric-score {
+  font-family: 'Manrope', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.02em;
+}
+
+/* --- Scrollbar styling --- */
+.kanban-scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-outline-variant);
+  border-radius: 4px;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fadeIn  { animation: fadeIn 0.3s ease both; }
+.animate-slideUp { animation: slideUp 0.4s ease both; }
+.animate-pulse   { animation: pulse 2s ease-in-out infinite; }
+
+/* --- Stitch component helpers --- */
+.card-hover {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.card-hover:hover {
+  border-color: var(--color-accent-navy) !important;
+}
+
+.btn-primary {
+  background-color: var(--color-accent-navy);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.btn-primary:hover { opacity: 0.9; }
+
+.btn-saffron {
+  background-color: var(--color-accent-saffron);
+  color: #1c1b1b;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.btn-saffron:hover { opacity: 0.9; }
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.btn-outline:hover { border-color: var(--color-accent-navy); }
+
+/* --- Sidebar nav active state (border-left variant from Dashboard Stitch) --- */
+.nav-active {
+  border-left: 4px solid var(--color-accent-saffron);
+  background-color: var(--color-surface-container-low);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* --- Match score circle SVG fill helper --- */
+.score-circle-bg { color: var(--color-surface-variant); }
+.score-circle-fill { color: var(--color-accent-saffron); }

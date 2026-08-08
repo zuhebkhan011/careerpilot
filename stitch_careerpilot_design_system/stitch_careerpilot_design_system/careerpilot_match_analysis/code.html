@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Match Analysis - CareerPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "on-error": "#ffffff",
+                            "inverse-on-surface": "#f4f0ef",
+                            "inverse-surface": "#313030",
+                            "secondary-fixed-dim": "#aec7f6",
+                            "primary": "#000000",
+                            "on-tertiary": "#ffffff",
+                            "surface": "#fdf8f8",
+                            "primary-container": "#1c1b1b",
+                            "outline": "#747878",
+                            "surface-container": "#f1edec",
+                            "primary-fixed-dim": "#c8c6c5",
+                            "on-secondary": "#ffffff",
+                            "on-primary-fixed-variant": "#474746",
+                            "on-surface-variant": "#444748",
+                            "on-background": "#1c1b1b",
+                            "surface-container-low": "#f7f3f2",
+                            "on-tertiary-fixed": "#2f1400",
+                            "error": "#ba1a1a",
+                            "outline-variant": "#c4c7c7",
+                            "surface-tint": "#5f5e5e",
+                            "surface-container-high": "#ebe7e6",
+                            "inverse-primary": "#c8c6c5",
+                            "tertiary": "#000000",
+                            "secondary": "#465f88",
+                            "tertiary-fixed-dim": "#ffb780",
+                            "on-surface": "#1c1b1b",
+                            "surface-variant": "#e5e2e1",
+                            "secondary-container": "#b6d0ff",
+                            "surface-dim": "#ddd9d8",
+                            "surface-container-highest": "#e5e2e1",
+                            "secondary-fixed": "#d6e3ff",
+                            "on-tertiary-container": "#bb7336",
+                            "on-primary-fixed": "#1c1b1b",
+                            "error-container": "#ffdad6",
+                            "surface-container-lowest": "#ffffff",
+                            "primary-fixed": "#e5e2e1",
+                            "tertiary-fixed": "#ffdcc4",
+                            "tertiary-container": "#2f1400",
+                            "background": "#fdf8f8",
+                            "on-secondary-fixed-variant": "#2d476f",
+                            "surface-bright": "#fdf8f8",
+                            "on-primary": "#ffffff",
+                            "on-secondary-fixed": "#001b3d",
+                            "on-secondary-container": "#3f5881",
+                            "on-tertiary-fixed-variant": "#6f3800",
+                            "on-primary-container": "#858383",
+                            "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "base": "4px",
+                            "gutter": "16px",
+                            "xl": "32px",
+                            "xs": "8px",
+                            "margin-desktop": "40px",
+                            "margin-mobile": "16px",
+                            "sm": "12px",
+                            "lg": "24px",
+                            "xxl": "48px",
+                            "md": "16px"
+                    },
+                    "fontFamily": {
+                            "display-lg": ["Manrope"],
+                            "numeric-score": ["Manrope"],
+                            "title-md": ["Manrope"],
+                            "body-lg": ["Manrope"],
+                            "label-md": ["Manrope"],
+                            "title-lg": ["Manrope"],
+                            "headline-md": ["Manrope"],
+                            "headline-lg": ["Manrope"],
+                            "body-sm": ["Manrope"],
+                            "body-md": ["Manrope"]
+                    },
+                    "fontSize": {
+                            "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "numeric-score": ["24px", {"lineHeight": "24px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+                            "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- Modal Container -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-margin-mobile md:p-margin-desktop bg-surface-tint/20 backdrop-blur-sm">
+<!-- Modal Card -->
+<div class="bg-surface-container-lowest w-full max-w-[800px] max-h-[90vh] overflow-y-auto rounded-xl shadow-[0px_12px_32px_rgba(0,0,0,0.08)] border border-outline-variant flex flex-col relative">
+<!-- Close Button -->
+<button aria-label="Close modal" class="absolute top-md right-md p-xs rounded-full hover:bg-surface-container transition-colors text-on-surface-variant z-10">
+<span class="material-symbols-outlined" data-icon="close" data-weight="regular">close</span>
+</button>
+<!-- Header Section -->
+<header class="p-lg md:p-xl border-b border-outline-variant bg-surface-container-low rounded-t-xl flex flex-col md:flex-row md:items-center justify-between gap-md relative overflow-hidden">
+<!-- Decorative subtle background -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-secondary-container/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+<div class="flex-1 relative z-10">
+<div class="flex items-center gap-xs mb-xs">
+<span class="text-on-surface-variant font-label-md uppercase tracking-wider">Match Analysis</span>
+<span class="material-symbols-outlined text-secondary" data-icon="psychology" style="font-size: 16px;">psychology</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary mb-xs">Backend Intern</h1>
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-contain" data-alt="A clean, minimalist abstract logo for a modern tech company named TCS. The logo is geometric and professional, sitting on a solid white background, embodying corporate reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIXqNDuRT5sHAvX0s6tEayAd2cAxtapfvfAwtYW3VgdUuuPRxHIF41zXxovaVoiyjmaX_QfHRz69tEDfTeqQq-oKhAAdXI3y6J2A_G8q9ix77i42ZueemGkzKtWbJa5bvcWvT0lCLHjMTaiSGbCgMTz3qhwQg9TX9mV2NydOjkgF39JxDZ3fUPWqsHTN2lIUY3kSj_c68yUTriC1AqXCWZkxGFLdy5SWfmVKGcXKF5sb2uXPMLMo0"/>
+</div>
+<span class="font-title-md text-title-md text-on-surface-variant">Tata Consultancy Services (TCS)</span>
+</div>
+</div>
+<!-- Match Score Badge -->
+<div class="flex flex-col items-center justify-center p-md bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm relative z-10 min-w-[120px]">
+<div class="relative w-16 h-16 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-[#F4A261]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="91, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="font-numeric-score text-numeric-score text-primary">91%</span>
+</div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant mt-xs">Match Score</span>
+</div>
+</header>
+<!-- Content Area -->
+<main class="p-lg md:p-xl flex flex-col gap-lg md:gap-xl">
+<!-- Why this score? Paragraph -->
+<section class="bg-[#FAF9F6] p-lg rounded-lg border border-outline-variant">
+<h2 class="font-title-lg text-title-lg text-primary mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[#F4A261]" data-icon="lightbulb" data-weight="fill">lightbulb</span>
+                        AI Evaluation
+                    </h2>
+<p class="font-body-md text-body-md text-on-surface">
+                        You are a highly competitive candidate for this Backend Intern position at TCS. Your deep practical experience with the MERN stack—specifically Node.js and Express.js projects—aligns perfectly with their core requirements. While you have excellent foundational coding skills, there are minor gaps in modern containerization and cloud deployment (Docker, AWS) that prevent a 100% match. However, these are typically considered trainable skills for an intern role.
+                    </p>
+</section>
+<!-- Detailed Breakdown Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Strong Matches -->
+<section class="flex flex-col gap-sm">
+<h3 class="font-title-md text-title-md text-primary flex items-center gap-xs border-b border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle">check_circle</span>
+                            Why you're a strong match
+                        </h3>
+<ul class="flex flex-col gap-sm mt-xs">
+<li class="flex items-start gap-sm bg-surface-container-low p-sm rounded border border-outline-variant">
+<span class="material-symbols-outlined text-[#002147] mt-1 text-[20px]" data-icon="verified">verified</span>
+<div>
+<span class="font-title-md text-title-md text-primary block">Node.js Experience</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block mt-1">Evidenced by 3 academic projects and your previous internship.</span>
+</div>
+</li>
+<li class="flex items-start gap-sm bg-surface-container-low p-sm rounded border border-outline-variant">
+<span class="material-symbols-outlined text-[#002147] mt-1 text-[20px]" data-icon="verified">verified</span>
+<div>
+<span class="font-title-md text-title-md text-primary block">Express.js Framework</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block mt-1">Matches required backend routing skills perfectly.</span>
+</div>
+</li>
+<li class="flex items-start gap-sm bg-surface-container-low p-sm rounded border border-outline-variant">
+<span class="material-symbols-outlined text-[#002147] mt-1 text-[20px]" data-icon="verified">verified</span>
+<div>
+<span class="font-title-md text-title-md text-primary block">MongoDB Knowledge</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block mt-1">Strong alignment with their NoSQL database requirement.</span>
+</div>
+</li>
+</ul>
+</section>
+<!-- Areas for Improvement -->
+<div class="flex flex-col gap-lg">
+<!-- Partial Matches -->
+<section class="flex flex-col gap-sm">
+<h3 class="font-title-md text-title-md text-primary flex items-center gap-xs border-b border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-[#F4A261]" data-icon="warning">warning</span>
+                                Partial Match
+                            </h3>
+<ul class="flex flex-col gap-sm mt-xs">
+<li class="flex items-start gap-sm bg-[#FAF9F6] p-sm rounded border border-outline-variant">
+<span class="material-symbols-outlined text-[#F4A261] mt-1 text-[20px]" data-icon="cloud">cloud</span>
+<div>
+<span class="font-title-md text-title-md text-primary block">Cloud Deployment</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block mt-1">You have general concepts but lack hands-on AWS exposure.</span>
+</div>
+</li>
+</ul>
+</section>
+<!-- Skill Gaps -->
+<section class="flex flex-col gap-sm">
+<h3 class="font-title-md text-title-md text-primary flex items-center gap-xs border-b border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-error" data-icon="cancel">cancel</span>
+                                Skill Gaps
+                            </h3>
+<ul class="flex flex-col gap-sm mt-xs">
+<li class="flex items-start gap-sm bg-[#FAF9F6] p-sm rounded border border-outline-variant">
+<span class="material-symbols-outlined text-outline mt-1 text-[20px]" data-icon="block">block</span>
+<div>
+<span class="font-title-md text-title-md text-primary block">Docker</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block mt-1">Not found in your resume or portfolio.</span>
+</div>
+</li>
+</ul>
+</section>
+</div>
+</div>
+<!-- Actionable Recommendation -->
+<section class="bg-[#002147] text-white p-lg rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-md relative overflow-hidden">
+<!-- Decorative abstract shape -->
+<div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+<div class="flex-1 relative z-10">
+<h4 class="font-title-lg text-title-lg mb-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-[#F4A261]" data-icon="rocket_launch">rocket_launch</span>
+                            CareerPilot Recommendation
+                        </h4>
+<p class="font-body-sm text-body-sm text-white/80">
+                            Learn Docker fundamentals and deploy a small Node.js app to an AWS EC2 instance before the interview. Mentioning this active learning will bridge the skill gap effectively.
+                        </p>
+</div>
+<button class="relative z-10 whitespace-nowrap bg-[#F4A261] text-[#1c1b1b] font-title-md text-title-md px-md py-sm rounded-lg hover:bg-[#e09152] transition-colors border-none shadow-sm flex items-center gap-xs">
+                        Start Docker Course
+                        <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</section>
+</main>
+<!-- Footer Actions -->
+<footer class="p-md md:p-lg border-t border-outline-variant bg-surface-container-lowest rounded-b-xl flex justify-end gap-md">
+<button class="bg-transparent border border-outline-variant text-[#1c1b1b] font-title-md text-title-md px-lg py-sm rounded-lg hover:bg-surface-container transition-colors">
+                    Close
+                </button>
+<button class="bg-[#002147] text-white font-title-md text-title-md px-lg py-sm rounded-lg hover:bg-[#001733] transition-colors border-none">
+                    Apply Now
+                </button>
+</footer>
+</div>
+</div>
+</body></html>
