@@ -58,6 +58,87 @@ async function fetchAllJobs(): Promise<Job[]> {
   return memoryDb.jobs;
 }
 
+/**
+ * Calculate multi-signal candidate-job match score
+ */
+export function calculatePersonalizedMatchScore(profile: Profile, job: Job): number {
+  const candSkills = (profile.skills || []).map(s => s.toLowerCase());
+  const reqSkills = (job.skills || []).map((s: string) => s.toLowerCase());
+  const prefSkills = (job.preferred_skills || []).map((s: string) => s.toLowerCase());
+
+  // 1. Skill Overlap (40% weight)
+  const matchedReq = reqSkills.filter((s: string) => candSkills.some(cs => cs.includes(s) || s.includes(cs)));
+  const matchedPref = prefSkills.filter((s: string) => candSkills.some(cs => cs.includes(s) || s.includes(cs)));
+  const totalSkillsCount = Math.max(1, reqSkills.length + prefSkills.length);
+  const totalMatchedCount = matchedReq.length * 1.2 + matchedPref.length * 0.8;
+  const skillRatio = Math.min(1, totalMatchedCount / reqSkills.length);
+  const skillScore = skillRatio * 100;
+
+  // 2. Role & Title Fit (30% weight)
+  let roleFitScore = 50;
+  const jobTitle = job.role.toLowerCase();
+  const jobDesc = job.description.toLowerCase();
+  const targetRoles = (profile.preferred_roles || []).map(r => r.toLowerCase());
+
+  const isJavaCandidate = candSkills.some(s => ['java', 'spring', 'hibernate', 'spring boot'].includes(s));
+  const isFrontendCandidate = candSkills.some(s => ['react', 'typescript', 'next.js', 'vue', 'tailwind'].includes(s));
+  const isPythonCandidate = candSkills.some(s => ['python', 'django', 'flask', 'fastapi'].includes(s));
+
+  const isJavaJob = jobTitle.includes('java') || jobDesc.includes('spring boot') || reqSkills.includes('java');
+  const isFrontendJob = jobTitle.includes('react') || jobTitle.includes('frontend') || jobDesc.includes('react');
+  const isPythonJob = jobTitle.includes('python') || jobDesc.includes('django');
+
+  if (targetRoles.some(tr => jobTitle.includes(tr) || tr.includes(jobTitle))) {
+    roleFitScore += 35;
+  }
+  if (isJavaCandidate && isJavaJob) roleFitScore += 40;
+  if (isFrontendCandidate && isFrontendJob) roleFitScore += 40;
+  if (isPythonCandidate && isPythonJob) roleFitScore += 40;
+
+  // Penalty if candidate is purely frontend applying for pure Java backend (or vice-versa)
+  if (isFrontendCandidate && !isJavaCandidate && isJavaJob && !isFrontendJob) {
+    roleFitScore -= 30;
+  }
+  if (isJavaCandidate && !isFrontendCandidate && isFrontendJob && !isJavaJob) {
+    roleFitScore -= 30;
+  }
+
+  roleFitScore = Math.max(20, Math.min(100, roleFitScore));
+
+  // 3. Location Match (15% weight)
+  let locationScore = 75; // Default neutral
+  if (profile.location && job.location) {
+    const candLoc = profile.location.toLowerCase();
+    const jobLoc = job.location.toLowerCase();
+    if (candLoc.includes(jobLoc) || jobLoc.includes(candLoc)) {
+      locationScore = 100;
+    } else if (job.work_mode === 'Remote' || job.work_mode === 'Hybrid') {
+      locationScore = 90;
+    } else {
+      locationScore = 60;
+    }
+  }
+
+  // 4. Experience Match (15% weight)
+  let expScore = 85;
+  const jobExp = (job.experience_required || '').toLowerCase();
+  if (jobExp.includes('0-1') || jobExp.includes('0-2') || jobExp.includes('fresher') || jobExp.includes('internship')) {
+    expScore = 95;
+  } else if (jobExp.includes('5+') || jobExp.includes('senior') || jobExp.includes('lead')) {
+    expScore = 60;
+  }
+
+  // Weighted sum
+  const finalScore = Math.round(
+    skillScore * 0.40 +
+    roleFitScore * 0.30 +
+    locationScore * 0.15 +
+    expScore * 0.15
+  );
+
+  return Math.max(45, Math.min(98, finalScore));
+}
+
 export const getJobs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { location, workMode, employmentType, experience, skill, search, profileId } = req.query;
@@ -67,12 +148,9 @@ export const getJobs = async (req: Request, res: Response, next: NextFunction) =
     const targetProfileId = String(profileId || 'demo-profile-1');
     const profile = await fetchProfile(targetProfileId);
 
-    if (profile && profile.skills && profile.skills.length > 0) {
-      const candSkills = profile.skills.map(s => s.toLowerCase());
+    if (profile) {
       jobs = jobs.map((job: any) => {
-        const reqSkills = (job.skills || []).map((s: string) => s.toLowerCase());
-        const matched = reqSkills.filter((s: string) => candSkills.some(cs => cs.includes(s) || s.includes(cs)));
-        const matchScore = reqSkills.length > 0 ? Math.max(55, Math.min(98, Math.round((matched.length / reqSkills.length) * 100))) : 80;
+        const matchScore = calculatePersonalizedMatchScore(profile, job);
         return {
           ...job,
           match_score: matchScore,

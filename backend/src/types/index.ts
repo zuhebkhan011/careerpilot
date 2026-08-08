@@ -88,6 +88,7 @@ export interface JobMatch {
   reasoning: string;
   recommendations: string[];
   created_at?: string;
+  job?: Job;
 }
 
 export type ApplicationStatus = 'INTERESTED' | 'APPLIED' | 'INTERVIEW' | 'SELECTED' | 'REJECTED';

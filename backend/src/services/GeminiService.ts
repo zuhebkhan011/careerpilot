@@ -45,81 +45,89 @@ export class GeminiService {
   }
 
   /**
-   * Analyze raw text from PDF resume and structure it into standardized JSON profile format & deep analysis
+   * Analyze raw text from PDF resume and extract structured candidate profile + AI audit
    */
   async analyzeResume(rawText: string): Promise<ResumeAnalysisResult> {
     const prompt = `
-You are an expert AI Resume Parser & Senior Career Architect.
-Extract structured candidate information AND perform an in-depth resume quality audit.
+You are an expert AI Resume Parser & Senior Tech Recruiter.
+Extract candidate information STRICTLY from the provided resume text.
+DO NOT guess or infer missing personal information. If a field is not present in the text, return null or an empty array.
 
-Return ONLY a valid JSON object matching this exact schema:
+RULES:
+1. NAME: Extract candidate's full name from the resume header. Do NOT confuse with college, company, or project names. If missing, return null.
+2. PHONE: Extract candidate's phone number. Normalize to readable format (e.g., "+91 XXXXXXXXXX" or "9876543210"). Do NOT confuse with roll numbers, registration IDs, years, or postal codes. If missing, return null.
+3. EMAIL: Extract email address. If missing, return null.
+4. LOCATION: Extract ONLY the candidate's personal home/current city and state/country from the contact header section. DO NOT infer location from college location, employer location, or project location. If candidate's personal location is not explicitly stated in the contact section, return null.
+5. EDUCATION: Support Indian education formats (BCA, B.Tech, BE, MCA, M.Tech, B.Sc, B.Com, M.Com, MBA, 12th, 10th, Diploma, CGPA, SPI, CPI, Percentage).
+   Extract structured entries for education.
+
+Return ONLY a valid JSON object matching this schema:
 {
   "parsedData": {
-    "name": "Full Name",
-    "email": "email@example.com",
-    "phone": "+91 XXXXXXXXXX",
-    "location": "City, Country",
-    "summary": "2-3 sentence professional summary",
-    "education": "Degree in Major",
-    "degree": "B.Tech / B.E. / M.Tech / B.Sc / BCA",
-    "college": "University / College Name",
-    "graduation_year": "2024",
-    "skills": ["Skill 1", "Skill 2"],
+    "name": null,
+    "email": null,
+    "phone": null,
+    "location": null,
+    "summary": null,
+    "education": null,
+    "degree": null,
+    "college": null,
+    "graduation_year": null,
+    "educationEntries": [
+      {
+        "degree": null,
+        "field": null,
+        "institution": null,
+        "location": null,
+        "startYear": null,
+        "endYear": null,
+        "grade": null
+      }
+    ],
+    "skills": [],
     "experience": [
       {
-        "title": "Role Title",
-        "company": "Company Name",
-        "duration": "Duration e.g. Jun 2023 - Present",
-        "description": "Responsibilities and achievements"
+        "title": "",
+        "company": "",
+        "duration": "",
+        "description": ""
       }
     ],
     "projects": [
       {
-        "title": "Project Name",
-        "tech_stack": ["React", "Node.js"],
-        "description": "Short summary of project",
-        "link": "https://..."
+        "title": "",
+        "tech_stack": [],
+        "description": "",
+        "link": null
       }
     ],
-    "certifications": ["Cert 1"],
-    "achievements": ["Achievement 1"],
-    "languages": ["English", "Hindi"]
+    "certifications": [],
+    "achievements": [],
+    "languages": []
   },
-  "resumeScore": 84,
-  "scoreExplanation": "Explanation of score based on skills, project depth, experience, and metric clarity.",
+  "resumeScore": 85,
+  "scoreExplanation": "Explanation based on candidate skills, project depth, and experience clarity.",
   "strengths": [
-    "✓ Strong Node.js & REST API project experience",
-    "✓ Relevant B.Tech Computer Science degree",
-    "✓ Good database fundamentals with PostgreSQL"
+    "✓ Point 1 based on actual resume text",
+    "✓ Point 2 based on actual resume text"
   ],
   "weaknesses": [
-    "△ Project descriptions lack measurable impact metrics",
-    "△ Experience section needs more specific technical bullets",
-    "△ Cloud deployment technologies (AWS, Docker) are missing"
+    "△ Area to improve based on actual resume text"
   ],
   "missingSkills": [
-    { "skill": "Docker", "reason": "Docker would strengthen your backend deployment profile and improve your fit for entry-level backend roles." },
-    { "skill": "AWS", "reason": "Cloud services (EC2, S3) are highly requested in Indian tech firms for software development engineers." },
-    { "skill": "Redis", "reason": "Caching is essential for high-concurrency payment and fintech roles." }
+    { "skill": "SkillName", "reason": "Why this skill strengthens candidate profile" }
   ],
   "improvements": [
     {
-      "section": "Projects Section",
-      "original": "Built an e-commerce website.",
-      "improved": "Built a full-stack e-commerce platform using React, Node.js, and PostgreSQL with JWT authentication.",
-      "impact": "High"
-    },
-    {
-      "section": "Experience Section",
-      "original": "Worked on microservices.",
-      "improved": "Developed 5+ Node.js REST API microservice endpoints processing 10,000+ daily requests.",
+      "section": "Section Name",
+      "original": "Original text snippet",
+      "improved": "Improved action-oriented bullet",
       "impact": "High"
     }
   ],
   "recommendedRoles": [
-    "Software Development Engineer I (Backend)",
-    "Full Stack Web Developer",
-    "Junior Software Engineer"
+    "Role 1",
+    "Role 2"
   ]
 }
 
@@ -139,13 +147,13 @@ ${rawText}
       const json = JSON.parse(cleaned);
 
       const parsedData = json.parsedData || json;
-      const resumeScore = typeof json.resumeScore === 'number' ? json.resumeScore : 84;
-      const scoreExplanation = json.scoreExplanation || 'Your resume demonstrates solid foundational skills, but project descriptions could include more metric impact.';
-      const strengths = Array.isArray(json.strengths) ? json.strengths : ['✓ Core technical skills matched', '✓ Relevant degree'];
-      const weaknesses = Array.isArray(json.weaknesses) ? json.weaknesses : ['△ Project metric details could be stronger'];
-      const missingSkills = Array.isArray(json.missingSkills) ? json.missingSkills : [{ skill: 'Docker', reason: 'Essential for containerized cloud deployment.' }];
+      const resumeScore = typeof json.resumeScore === 'number' ? json.resumeScore : 80;
+      const scoreExplanation = json.scoreExplanation || 'Resume demonstrates foundational alignment for target technical roles.';
+      const strengths = Array.isArray(json.strengths) ? json.strengths : [];
+      const weaknesses = Array.isArray(json.weaknesses) ? json.weaknesses : [];
+      const missingSkills = Array.isArray(json.missingSkills) ? json.missingSkills : [];
       const improvements = Array.isArray(json.improvements) ? json.improvements : [];
-      const recommendedRoles = Array.isArray(json.recommendedRoles) ? json.recommendedRoles : ['Software Engineer', 'Backend Developer'];
+      const recommendedRoles = Array.isArray(json.recommendedRoles) ? json.recommendedRoles : [];
 
       return {
         parsedData,
@@ -158,7 +166,7 @@ ${rawText}
         recommendedRoles,
       };
     } catch (error) {
-      console.warn('⚠️ Gemini JSON parse error, utilizing heuristic fallback:', error);
+      console.warn('⚠️ Gemini JSON parse error, utilizing source-based fallback:', error);
       return this.fallbackResumeAnalysis(rawText);
     }
   }
@@ -169,7 +177,7 @@ ${rawText}
   async matchCandidateToJob(profile: Profile, job: Job): Promise<Omit<JobMatch, 'id' | 'created_at'>> {
     const prompt = `
 You are an expert Indian Tech Recruiter & AI Career Agent.
-Perform semantic candidate-job matching. Reason about transferable skills, project experience, technology stack overlap, responsibilities, and education.
+Perform semantic candidate-job matching based STRICTLY on the candidate profile and job requirements.
 
 CANDIDATE PROFILE:
 ${JSON.stringify(profile, null, 2)}
@@ -177,27 +185,27 @@ ${JSON.stringify(profile, null, 2)}
 JOB DESCRIPTION:
 Company: ${job.company}
 Role: ${job.role}
+Location: ${job.location}
 Experience Required: ${job.experience_required}
 Education Required: ${job.education_required}
-Skills: ${JSON.stringify(job.skills)}
+Skills Required: ${JSON.stringify(job.skills)}
 Responsibilities: ${JSON.stringify(job.responsibilities)}
 Preferred Skills: ${JSON.stringify(job.preferred_skills)}
 Description: ${job.description}
 
 Return ONLY a valid JSON object matching this schema:
 {
-  "match_score": 88,
-  "skill_match": 85,
-  "experience_match": 90,
+  "match_score": 85,
+  "skill_match": 80,
+  "experience_match": 85,
   "education_match": 90,
-  "role_fit": 87,
-  "strengths": ["Strong Node.js & REST API experience", "Relevant B.Tech degree"],
-  "missing_skills": ["Docker", "AWS"],
-  "partial_matches": ["Cloud Deployment experience via Vercel/Netlify"],
-  "reasoning": "Detailed 2-3 sentence explanation of why candidate fits or where gaps exist.",
+  "role_fit": 85,
+  "strengths": ["Reason 1 highlighting actual matched candidate skills"],
+  "missing_skills": ["Skill missing from candidate profile"],
+  "partial_matches": ["Transferable skill or technology match"],
+  "reasoning": "2-3 sentence personalized explanation referencing candidate's specific skills vs job requirements.",
   "recommendations": [
-    "Learn Docker basics to strengthen backend deployment profile.",
-    "Highlight REST API optimization projects on resume."
+    "Actionable tip tailored to candidate profile"
   ]
 }
 `;
@@ -222,11 +230,11 @@ Return ONLY a valid JSON object matching this schema:
         strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
         missing_skills: Array.isArray(parsed.missing_skills) ? parsed.missing_skills : [],
         partial_matches: Array.isArray(parsed.partial_matches) ? parsed.partial_matches : [],
-        reasoning: parsed.reasoning || 'Candidate demonstrates good core tech stack alignment with job role requirements.',
+        reasoning: parsed.reasoning || `Candidate profile evaluated against ${job.role} at ${job.company}.`,
         recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
       };
     } catch (error) {
-      console.warn('⚠️ Gemini API error during job matching, utilizing intelligent fallback:', error);
+      console.warn('⚠️ Gemini API error during job matching, utilizing fallback:', error);
       return this.fallbackJobMatch(profile, job);
     }
   }
@@ -239,16 +247,18 @@ Return ONLY a valid JSON object matching this schema:
 Write a professional, compelling, highly customized Cover Letter for ${profile.name || 'the candidate'} applying for the ${job.role} position at ${job.company}.
 
 Candidate Profile:
-Skills: ${profile.skills?.join(', ')}
-Education: ${profile.degree || profile.education} from ${profile.college || 'University'}
-Projects: ${profile.projects?.map(p => p.title + ': ' + p.description).join('; ')}
-Experience: ${profile.experience?.map(e => e.title + ' at ' + e.company).join('; ')}
+Name: ${profile.name || 'Applicant'}
+Location: ${profile.location || ''}
+Skills: ${profile.skills?.join(', ') || ''}
+Education: ${profile.degree || profile.education || ''} ${profile.college ? 'from ' + profile.college : ''}
+Projects: ${profile.projects?.map(p => p.title + ': ' + p.description).join('; ') || ''}
+Experience: ${profile.experience?.map(e => e.title + ' at ' + e.company).join('; ') || ''}
 
 Job Details:
 Role: ${job.role}
 Company: ${job.company}
 Location: ${job.location}
-Key Requirements: ${job.skills?.join(', ')}
+Key Requirements: ${job.skills?.join(', ') || ''}
 
 Instructions:
 - Keep it concise, formal, and persuasive (3-4 paragraphs).
@@ -299,7 +309,6 @@ Return JSON with:
       const cleaned = this.cleanJsonResponse(text);
       return JSON.parse(cleaned);
     } catch (error) {
-      console.warn('⚠️ Gemini API error reviewing resume, using fallback:', error);
       return this.fallbackResumeReview(profile);
     }
   }
@@ -309,7 +318,7 @@ Return JSON with:
    */
   async generateCareerGuidance(profile: Profile): Promise<any> {
     const prompt = `
-Provide career guidance and a 3-step growth roadmap for ${profile.name || 'a software engineer'} with skills: ${profile.skills?.join(', ')}.
+Provide career guidance and a 3-step growth roadmap for ${profile.name || 'a candidate'} with skills: ${profile.skills?.join(', ') || 'Software Development'}.
 
 Return JSON:
 {
@@ -317,11 +326,11 @@ Return JSON:
   "careerStage": "Early Career / Fresher",
   "skillGaps": ["Containerization (Docker)", "System Design Basics"],
   "actionableRoadmap": [
-    { "phase": "Month 1", "focus": "Master TypeScript & Advanced Node.js patterns" },
-    { "phase": "Month 2", "focus": "Build & deploy full stack app with Docker & PostgreSQL" },
+    { "phase": "Month 1", "focus": "Master core engineering concepts & API patterns" },
+    { "phase": "Month 2", "focus": "Build & deploy full stack app with database integration" },
     { "phase": "Month 3", "focus": "Prepare System Design & Open Source Contributions" }
   ],
-  "marketInsights": "High demand in Indian tech hubs (Bengaluru, Pune, NCR) for Node.js + React developers."
+  "marketInsights": "Active hiring across tech hubs in India for developers with core project experience."
 }
 `;
 
@@ -338,23 +347,77 @@ Return JSON:
     }
   }
 
-  // --- Fallbacks for Offline / Quota / Unset Key Operation ---
+  // --- Source-Based Fallback Parser (used if API key is unconfigured/offline) ---
 
   private fallbackResumeAnalysis(rawText: string): ResumeAnalysisResult {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-    const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    const phoneMatch = rawText.match(/(\+91[\-\s]?)?[6-9]\d{9}/);
 
-    // Dynamic candidate name from first non-header line
-    let candidateName = 'Candidate Name';
+    // 1. Candidate Name
+    let candidateName: string | null = null;
     if (lines.length > 0) {
       const firstLine = lines[0].replace(/^(resume|curriculum vitae|cv)\s*/i, '').trim();
-      if (firstLine.length > 2 && firstLine.length < 40 && !firstLine.includes('@')) {
+      if (firstLine.length > 2 && firstLine.length < 40 && !firstLine.includes('@') && !/\d/.test(firstLine)) {
         candidateName = firstLine;
       }
     }
 
-    // Dynamic skill detection from raw text
+    // 2. Email
+    const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    const candidateEmail = emailMatch ? emailMatch[0] : null;
+
+    // 3. Phone (Normalized Indian format)
+    const phoneMatch = rawText.match(/(\+91[\-\s]?)?[6-9]\d{9}/);
+    const candidatePhone = phoneMatch ? phoneMatch[0] : null;
+
+    // 4. Candidate Location (Source-based ONLY — check header lines)
+    let candidateLocation: string | null = null;
+    const headerSnippet = lines.slice(0, 8).join(' ');
+    const knownCities = [
+      'Ahmedabad', 'Vadodara', 'Surat', 'Mumbai', 'Pune', 'Bengaluru', 'Bangalore',
+      'Hyderabad', 'Delhi', 'Noida', 'Gurugram', 'Gurgaon', 'Chennai', 'Kolkata',
+      'Jaipur', 'Indore', 'Chandigarh', 'Kochi', 'Thiruvananthapuram'
+    ];
+    for (const city of knownCities) {
+      const regex = new RegExp(`\\b${city}\\b`, 'i');
+      if (regex.test(headerSnippet)) {
+        const stateMatch = headerSnippet.match(new RegExp(`${city}[,\\s]+([a-zA-Z\\s]{2,20})`, 'i'));
+        candidateLocation = stateMatch ? `${city}, ${stateMatch[1].trim()}` : `${city}, India`;
+        break;
+      }
+    }
+
+    // 5. Education (Indian degree formats)
+    let candidateDegree: string | null = null;
+    let candidateCollege: string | null = null;
+    let candidateYear: string | null = null;
+    let candidateEducation: string | null = null;
+
+    const degreeKeywords = ['BCA', 'B.Tech', 'B.E.', 'BE', 'MCA', 'M.Tech', 'B.Sc', 'B.Com', 'M.Com', 'MBA', 'Diploma', '12th', '10th'];
+    for (const dKw of degreeKeywords) {
+      const regex = new RegExp(`\\b${dKw.replace('.', '\\.')}\\b`, 'i');
+      if (regex.test(rawText)) {
+        candidateDegree = dKw;
+        break;
+      }
+    }
+
+    // Extract college/university line
+    const collegeLine = lines.find(l => /university|college|institute|iit|nit|vit|bits|aktu|gtu/i.test(l));
+    if (collegeLine) {
+      candidateCollege = collegeLine;
+    }
+
+    // Extract graduation year
+    const yearMatch = rawText.match(/\b(20[0-2][0-9])\b/);
+    if (yearMatch) {
+      candidateYear = yearMatch[1];
+    }
+
+    if (candidateDegree || candidateCollege) {
+      candidateEducation = `${candidateDegree || 'Degree'}${candidateCollege ? ' from ' + candidateCollege : ''}${candidateYear ? ' (' + candidateYear + ')' : ''}`;
+    }
+
+    // 6. Dynamic skill detection from raw text
     const detectedSkills: string[] = [];
     const techKeywords = [
       'Java', 'Spring Boot', 'Spring', 'MySQL', 'Hibernate', 'Microservices', 'Maven', 'JUnit',
@@ -368,10 +431,6 @@ Return JSON:
         detectedSkills.push(kw);
       }
     });
-
-    if (detectedSkills.length === 0) {
-      detectedSkills.push('Software Development', 'Problem Solving', 'Git', 'REST APIs');
-    }
 
     const isJavaDev = detectedSkills.some(s => ['Java', 'Spring Boot', 'Spring', 'Hibernate'].includes(s));
     const isFrontendDev = detectedSkills.some(s => ['React', 'TypeScript', 'Tailwind CSS', 'HTML5', 'Next.js'].includes(s));
@@ -393,7 +452,9 @@ Return JSON:
       strengths.push('✓ Solid foundational software development skills');
       strengths.push('✓ Hands-on project implementation');
     }
-    strengths.push(`✓ Versatile technical toolkit including ${detectedSkills.slice(0, 3).join(', ')}`);
+    if (detectedSkills.length > 0) {
+      strengths.push(`✓ Technical toolkit including ${detectedSkills.slice(0, 4).join(', ')}`);
+    }
 
     const weaknesses: string[] = [
       '△ Project descriptions could quantify measurable metric impact (e.g. latency or throughput gains)',
@@ -428,37 +489,24 @@ Return JSON:
 
     return {
       parsedData: {
-        name: candidateName,
-        email: emailMatch ? emailMatch[0] : `${candidateName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-        phone: phoneMatch ? phoneMatch[0] : '+91 9876543210',
-        location: rawText.includes('Mumbai') ? 'Mumbai, India' : rawText.includes('Pune') ? 'Pune, India' : rawText.includes('Hyderabad') ? 'Hyderabad, India' : 'Bengaluru, India',
-        summary: `${candidateName} is a ${recommendedRoles[0]} with technical experience in ${detectedSkills.slice(0, 5).join(', ')}.`,
-        education: rawText.includes('B.Sc') ? 'B.Sc in Computer Science' : 'B.Tech in Information Technology / Computer Science',
-        degree: rawText.includes('B.Sc') ? 'B.Sc' : 'B.Tech',
-        college: rawText.includes('Mumbai') ? 'Mumbai University' : rawText.includes('Pune') ? 'Pune University' : 'Vellore Institute of Technology (VIT)',
-        graduation_year: '2024',
+        name: candidateName || undefined,
+        email: candidateEmail || undefined,
+        phone: candidatePhone || undefined,
+        location: candidateLocation || undefined,
+        summary: candidateName ? `${candidateName} is a software developer with experience in ${detectedSkills.slice(0, 4).join(', ')}.` : undefined,
+        education: candidateEducation || undefined,
+        degree: candidateDegree || undefined,
+        college: candidateCollege || undefined,
+        graduation_year: candidateYear || undefined,
         skills: detectedSkills,
-        experience: [
-          {
-            title: recommendedRoles[0] + ' Intern',
-            company: 'Tech Solutions India',
-            duration: '2023 - 2024',
-            description: `Worked on technical deliverables using ${detectedSkills.slice(0, 3).join(', ')}.`,
-          },
-        ],
-        projects: [
-          {
-            title: `${detectedSkills[0] || 'Software'} Application System`,
-            tech_stack: detectedSkills.slice(0, 4),
-            description: `Built application leveraging ${detectedSkills.slice(0, 3).join(', ')}.`,
-          },
-        ],
-        certifications: isJavaDev ? ['Oracle Certified Associate Java SE'] : isFrontendDev ? ['Meta Front-End Developer Certificate'] : ['AWS Cloud Practitioner'],
-        achievements: ['Solved technical hackathon challenges', 'Built production ready APIs'],
-        languages: ['English', 'Hindi'],
+        experience: [],
+        projects: [],
+        certifications: [],
+        achievements: [],
+        languages: [],
       },
       resumeScore: calculatedScore,
-      scoreExplanation: `Your resume demonstrates good technical alignment in ${detectedSkills.slice(0, 3).join(', ')}. Adding quantifiable metric outcomes will elevate your score further.`,
+      scoreExplanation: `Resume demonstrates technical alignment in ${detectedSkills.slice(0, 3).join(', ')}. Adding quantifiable metric outcomes will elevate your score further.`,
       strengths,
       weaknesses,
       missingSkills,
@@ -467,12 +515,6 @@ Return JSON:
           section: 'Projects Section',
           original: `Built an application using ${detectedSkills[0] || 'software'}.`,
           improved: `Built a production-grade application using ${detectedSkills.slice(0, 3).join(', ')} with automated unit testing and 99.9% uptime.`,
-          impact: 'High',
-        },
-        {
-          section: 'Experience Section',
-          original: 'Developed application features.',
-          improved: `Engineered core API endpoints in ${detectedSkills[0] || 'code'} serving thousands of users.`,
           impact: 'High',
         },
       ],
@@ -498,24 +540,24 @@ Return JSON:
       experience_match: Math.max(70, finalScore - 5),
       education_match: 90,
       role_fit: Math.max(65, finalScore - 2),
-      strengths: matched.length > 0 ? matched.map(m => `Proficient in ${m}`) : ['Strong foundation in computer science core subjects'],
+      strengths: matched.length > 0 ? matched.map(m => `Proficient in ${m}`) : ['Foundational software development alignment'],
       missing_skills: missing.length > 0 ? missing : ['Cloud Containerization (Docker)'],
       partial_matches: ['Relational database design & optimization'],
-      reasoning: `Candidate exhibits strong match (${finalScore}%) for ${job.role} at ${job.company}. Core skills match ${matched.join(', ') || 'foundational software stack'}.`,
+      reasoning: `Candidate exhibits ${finalScore}% match for ${job.role} at ${job.company}. Matched skills: ${matched.join(', ') || 'core software stack'}.`,
       recommendations: missing.length > 0
         ? [`Familiarize yourself with ${missing.slice(0, 2).join(', ')} to maximize application success.`]
-        : ['Highlight recent backend projects in your interview pitch.'],
+        : ['Highlight key project achievements during interviews.'],
     };
   }
 
   private fallbackCoverLetter(profile: Profile, job: Job): string {
-    return `Dear Hiring Team at ${job.company},
+    return `Dear Hiring Manager at ${job.company},
 
-I am writing to express my enthusiastic interest in the ${job.role} position at ${job.company}. With a background in ${profile.degree || 'Computer Science'} from ${profile.college || 'University'} and practical skills in ${profile.skills?.slice(0, 4).join(', ')}, I am eager to contribute to your engineering team in ${job.location}.
+I am writing to express my strong interest in the ${job.role} position at ${job.company}. With my background in ${profile.degree || profile.education || 'Software Engineering'} ${profile.college ? 'from ' + profile.college : ''} and core technical skills in ${profile.skills?.slice(0, 4).join(', ') || 'software development'}, I am confident in my ability to add immediate value to your team.
 
-In my previous projects, including ${profile.projects?.[0]?.title || 'full-stack software development'}, I built scalable applications utilizing modern technology stacks. I am particularly drawn to ${job.company}'s work in software solutions, and I am confident that my technical skills match the requirements outlined for the ${job.role} role.
+My technical background aligns with ${job.company}'s requirements for ${job.role}. I have built software applications leveraging modern tools and RESTful architecture, ensuring reliability and clean code principles.
 
-Thank you for your time and consideration. I look forward to discussing how my experience aligns with your team's goals.
+Thank you for reviewing my application. I look forward to discussing how my technical background fits your engineering goals.
 
 Sincerely,
 ${profile.name || 'Candidate'}`;
@@ -533,7 +575,7 @@ ${profile.name || 'Candidate'}`;
         'Group technical skills cleanly into Languages, Frameworks, Databases, and Tools.',
       ],
       roleSpecificSuggestions: [
-        'For Indian tech companies (TCS, Razorpay, Zoho, Flipkart), highlight database optimization and API performance.',
+        'For Indian tech companies (Razorpay, TCS, Zoho, Zerodha), highlight database optimization and API performance.',
       ],
     };
   }
@@ -544,11 +586,11 @@ ${profile.name || 'Candidate'}`;
       careerStage: 'Early Career / Fresher',
       skillGaps: ['Docker', 'AWS / Cloud Deployment', 'System Design'],
       actionableRoadmap: [
-        { phase: 'Month 1', focus: 'Strengthen Node.js microservices and database query optimization.' },
+        { phase: 'Month 1', focus: 'Strengthen Node.js/Java microservices and database query optimization.' },
         { phase: 'Month 2', focus: 'Build a containerized project with Docker and deploy to cloud.' },
         { phase: 'Month 3', focus: 'Practice coding interviews and system design fundamentals.' },
       ],
-      marketInsights: 'High active hiring across IT & Product firms in Bengaluru, Pune, and Hyderabad.',
+      marketInsights: 'Active hiring across tech hubs in India (Bengaluru, Pune, Hyderabad, Mumbai).',
     };
   }
 }
