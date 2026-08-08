@@ -60,39 +60,39 @@ export const apiService = {
   },
 
   // 2. Candidate Profile APIs
-  getProfile: async (profileId: string = 'demo-profile-1'): Promise<ResumeProfile> => {
+  getProfile: async (profileId: string): Promise<ResumeProfile> => {
     const res = await fetch(`${API_BASE}/profiles/${profileId}`);
     const body = await res.json();
     if (!res.ok || !body.success) {
       throw new Error(body.error?.message || 'Failed to fetch candidate profile');
     }
     const p = body.data;
+    const analysis = p.analysis_result || null;
     return {
       id: p.id,
-      fullName: p.name || 'Candidate Name',
-      email: p.email || 'candidate@example.com',
-      phone: p.phone || '+91 9876543210',
-      location: p.location || 'Bengaluru, India',
-      targetRole: p.degree || 'Full Stack Developer',
-      yearsOfExperience: 1,
-      summary: `${p.degree || 'Engineering Graduate'} from ${p.college || 'University'} with core skills in ${p.skills?.slice(0, 4).join(', ')}.`,
+      fullName: p.name || '',
+      email: p.email || '',
+      phone: p.phone || '',
+      location: p.location || '',
+      targetRole: (analysis?.recommendedRoles || [])[0] || '',
+      yearsOfExperience: 0,
+      summary: p.summary || '',
       skills: p.skills || [],
       experiences: (p.experience || []).map((e: any, idx: number) => ({
         id: `exp-${idx}`,
-        title: e.title || 'Developer Intern',
-        company: e.company || 'Tech Company',
-        period: e.duration || '2024',
+        title: e.title || '',
+        company: e.company || '',
+        period: e.duration || '',
         description: e.description || '',
       })),
-      education: [
-        {
-          id: 'edu-1',
-          degree: p.education || p.degree || 'B.Tech CS',
-          institution: p.college || 'University',
-          year: p.graduation_year || '2024',
-        },
-      ],
+      education: p.education ? [{
+        id: 'edu-1',
+        degree: p.education || p.degree || '',
+        institution: p.college || '',
+        year: p.graduation_year || '',
+      }] : [],
       updatedAt: p.updated_at || new Date().toISOString(),
+      rawText: p.raw_text || '',
       college: p.college,
       degree: p.degree,
       graduation_year: p.graduation_year,
@@ -100,6 +100,17 @@ export const apiService = {
       certifications: p.certifications || [],
       achievements: p.achievements || [],
       languages: p.languages || [],
+      analysisData: analysis
+        ? {
+            resumeScore: typeof analysis.resumeScore === 'number' ? analysis.resumeScore : 0,
+            scoreExplanation: analysis.scoreExplanation || '',
+            strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
+            weaknesses: Array.isArray(analysis.weaknesses) ? analysis.weaknesses : [],
+            missingSkills: Array.isArray(analysis.missingSkills) ? analysis.missingSkills : [],
+            improvements: Array.isArray(analysis.improvements) ? analysis.improvements : [],
+            recommendedRoles: Array.isArray(analysis.recommendedRoles) ? analysis.recommendedRoles : [],
+          }
+        : undefined,
     };
   },
 

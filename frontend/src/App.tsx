@@ -16,33 +16,18 @@ import { CoverLetterModal } from './components/CoverLetterModal';
 import { ProUpgradeModal } from './components/ProUpgradeModal';
 import { NewApplicationModal } from './components/NewApplicationModal';
 
-const DEFAULT_PROFILE: ResumeProfile = {
+const EMPTY_PROFILE: ResumeProfile = {
   id: 'demo-profile-1',
-  fullName: 'Rahul Sharma',
-  email: 'rahul.sharma@example.com',
-  phone: '+91 9876543210',
-  location: 'Bengaluru, India',
-  targetRole: 'Software Engineer',
-  yearsOfExperience: 1,
-  summary: 'Computer Science Graduate with hands-on Node.js & Express REST API experience.',
-  skills: ['JavaScript', 'TypeScript', 'Node.js', 'Express.js', 'React', 'PostgreSQL', 'Git'],
-  experiences: [
-    {
-      id: 'exp-1',
-      title: 'Software Developer Intern',
-      company: 'Tech Solutions India',
-      period: 'Jan 2024 - Jun 2024',
-      description: 'Developed microservices REST backend using Express and PostgreSQL.',
-    },
-  ],
-  education: [
-    {
-      id: 'edu-1',
-      degree: 'B.Tech in Computer Science',
-      institution: 'Vellore Institute of Technology (VIT)',
-      year: '2024',
-    },
-  ],
+  fullName: '',
+  email: '',
+  phone: '',
+  location: '',
+  targetRole: '',
+  yearsOfExperience: 0,
+  summary: '',
+  skills: [],
+  experiences: [],
+  education: [],
   updatedAt: new Date().toISOString(),
 };
 
@@ -58,7 +43,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [resume, setResume] = useState<ResumeProfile>(DEFAULT_PROFILE);
+  const [resume, setResume] = useState<ResumeProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Modals
@@ -87,14 +72,23 @@ export default function App() {
     setLoading(true);
     const profileId = sessionStorage.getItem('cp_profile_id') || 'demo-profile-1';
     try {
-      const [prof, jobList, appList] = await Promise.all([
-        apiService.getProfile(profileId).catch(() => null),
+      const [jobList, appList] = await Promise.all([
         apiService.getJobs(undefined, profileId).catch(() => []),
         apiService.getApplications(profileId).catch(() => []),
       ]);
-      if (prof) setResume(prof);
       if (jobList.length > 0) setJobs(jobList);
       setApplications(appList);
+
+      // Fetch profile — if 404, that means no resume uploaded yet (clean state)
+      try {
+        const prof = await apiService.getProfile(profileId);
+        if (prof) setResume(prof);
+      } catch (profileErr: any) {
+        if (!profileErr.message?.includes('not found') && !profileErr.message?.includes('404')) {
+          console.warn('Profile fetch error:', profileErr.message);
+        }
+        // 404 = no resume yet — leave resume as null (clean empty state)
+      }
     } catch {
       addToast('error', 'Connection Error', 'Could not connect to backend. Ensure server is running on port 5000.');
     } finally {
@@ -157,9 +151,16 @@ export default function App() {
   };
 
   const handleSaveResume = (updatedResume: ResumeProfile) => {
+    // Set resume state directly from the upload/analysis response.
+    // Do NOT call loadData() here — that would strip analysisData by fetching the profile
+    // endpoint which may not yet have the analysis attached.
     setResume(updatedResume);
-    addToast('success', 'Profile Saved', 'Your changes have been saved to Supabase.');
-    loadData();
+    addToast('success', 'Analysis Complete!', 'AI resume analysis saved successfully.');
+    // Reload jobs so they get ranked against the new profile
+    const profileId = sessionStorage.getItem('cp_profile_id') || 'demo-profile-1';
+    apiService.getJobs(undefined, profileId).then(jobList => {
+      if (jobList.length > 0) setJobs(jobList);
+    }).catch(() => {});
   };
 
   // Render Login view if not authenticated
@@ -227,7 +228,7 @@ export default function App() {
                 <DashboardView
                   jobs={jobs}
                   applications={applications}
-                  resume={resume}
+                  resume={resume || EMPTY_PROFILE}
                   setActiveTab={setActiveTab}
                   onSelectJob={(j) => setMatchJob(j)}
                   onApplyJob={handleApplyJob}
@@ -240,7 +241,7 @@ export default function App() {
                   applications={applications}
                   onSelectJob={(j) => setMatchJob(j)}
                   onApplyJob={handleApplyJob}
-                  hasResume={!!resume.skills?.length || !!resume.rawText}
+                  hasResume={!!resume?.skills?.length || !!resume?.rawText}
                 />
               )}
               {activeTab === 'applications' && (
@@ -255,16 +256,16 @@ export default function App() {
               )}
               {activeTab === 'resume' && (
                 <ResumeView
-                  resume={resume}
+                  resume={resume || EMPTY_PROFILE}
                   onSaveResume={handleSaveResume}
                   onFindJobsForMe={() => setActiveTab('jobs')}
                 />
               )}
               {activeTab === 'coach' && (
-                <AICareerCoachView resume={resume} />
+                <AICareerCoachView resume={resume || EMPTY_PROFILE} />
               )}
               {activeTab === 'profile' && (
-                <ProfileView resume={resume} onSaveResume={handleSaveResume} />
+                <ProfileView resume={resume || EMPTY_PROFILE} onSaveResume={handleSaveResume} />
               )}
             </>
           )}
@@ -292,7 +293,7 @@ export default function App() {
         isOpen={isNewAppModalOpen}
         onClose={() => setIsNewAppModalOpen(false)}
         jobs={jobs}
-        profileId={resume.id}
+        profileId={(resume || EMPTY_PROFILE).id}
         onApplicationCreated={loadData}
       />
 
